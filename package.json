@@ -1,0 +1,16 @@
+{
+  "name": "the-news",
+  "version": "1.0.0",
+  "description": "The News — A Lycoris Product. Be dangerously well informed.",
+  "scripts": {
+    "server": "cd server && node server.js",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "seed": "cd server && node services/seedNews.js",
+    "build": "cd client && npm run build"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
