@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&display=swap">
+<style>*{box-sizing:border-box}@keyframes tnPulse{0%,100%{opacity:1}50%{opacity:.6}}@keyframes tnHeart{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}@keyframes tnBurst{from{transform:scale(.3);opacity:1}to{transform:scale(1);opacity:0}}@keyframes tnFade{from{opacity:0;transform:translate(-50%,-4px)}to{opacity:1;transform:translate(-50%,0)}}</style>
+</helmet>
+<div style="position:relative;width:100%;height:100%;background:#FAFAF8;overflow:hidden;font-family:Manrope,sans-serif">
+  <div style="position:absolute;top:56px;left:16px;right:16px;display:flex;gap:3px">
+    <sc-for list="{{ track }}" as="seg" hint-placeholder-count="8">
+      <div style="flex:1;height:2.5px;border-radius:2px;background:#F0F0EE;overflow:hidden"><div style="height:100%;width:{{ seg.w }};background:#0055FF;transition:width 100ms linear"></div></div>
+    </sc-for>
+  </div>
+  <div style="position:absolute;top:70px;left:20px;right:20px;height:30px;display:flex;align-items:center;justify-content:space-between">
+    <div style="width:28px;height:28px;border-radius:50%;background:#F0F0EE;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:#6B6B6B;stroke-width:1.75;stroke-linecap:round"><circle cx="12" cy="8" r="4.5"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1"><span style="font:italic 400 10px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 18px/1 Manrope,sans-serif;color:#0A0A0A;letter-spacing:-1px">News</span></div>
+    <div style="display:flex;padding:2px;border-radius:50px;background:#F0F0EE">
+      <div style="width:30px;height:24px;border-radius:50px;background:#FFFFFF;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:#0A0A0A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m12 2 10 5-10 5L2 7Z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></svg></div>
+      <div style="width:30px;height:24px;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:#8E8E93;stroke-width:2;stroke-linecap:round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></div>
+    </div>
+  </div>
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;top:112px;left:50%;transform:translateX(-50%);z-index:5;padding:8px 14px;border-radius:8px;background:#0A0A0A;color:#FFFFFF;font:500 12px/1 Manrope,sans-serif;white-space:nowrap;animation:tnFade 150ms ease-out">{{ toast }}</div>
+  </sc-if>
+  <div style="position:absolute;top:112px;bottom:150px;left:24px;right:64px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start">
+    <sc-if value="{{ breaking }}" hint-placeholder-val="{{ false }}">
+      <span style="margin-bottom:8px;padding:4px 10px;border-radius:50px;background:#FF3B3B;color:#FFFFFF;font:700 10px/1.2 Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase">Breaking</span>
+    </sc-if>
+    <span style="padding:5px 10px;border-radius:50px;background:#E8F0FF;color:#0055FF;font:600 11px/1.2 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase">{{ s.cat }}</span>
+    <h2 style="margin:16px 0 0;font-family:'DM Serif Display',serif;font-weight:400;font-size:{{ hsize }}px;line-height:1.25;color:#1A1A1A;text-wrap:pretty;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden">{{ s.title }}</h2>
+    <div style="width:40px;height:1px;background:#F0F0EE;margin:20px 0 16px"></div>
+    <p style="margin:0;font:400 16px/1.7 Manrope,sans-serif;color:#2A2A2A;text-wrap:pretty">{{ s.summary }}</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:24px">
+      <div style="width:20px;height:20px;border-radius:5px;background:#F0F0EE;display:flex;align-items:center;justify-content:center;font:700 10px/1 Manrope,sans-serif;color:#6B6B6B">{{ s.ini }}</div>
+      <span style="font:500 13px/1 Manrope,sans-serif;color:#0A0A0A">{{ s.source }}</span>
+      <span style="width:3px;height:3px;border-radius:50%;background:#6B6B6B"></span>
+      <span style="font:400 12px/1 Manrope,sans-serif;color:#6B6B6B">{{ s.time }}</span>
+    </div>
+  </div>
+  <div style="position:absolute;right:20px;bottom:130px;display:flex;flex-direction:column;gap:28px;z-index:4">
+    <button onClick="{{ onLike }}" style="position:relative;width:24px;height:24px;padding:0;border:0;background:none;cursor:pointer">
+      <sc-if value="{{ notLiked }}" hint-placeholder-val="{{ true }}">
+        <svg width="24" height="24" viewBox="0 0 24 24" style="display:block;fill:none;stroke:#8E8E93;stroke-width:1.75;stroke-linejoin:round"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"></path></svg>
+      </sc-if>
+      <sc-if value="{{ liked }}" hint-placeholder-val="{{ false }}">
+        <svg width="24" height="24" viewBox="0 0 24 24" style="display:block;fill:#FF3B3B;stroke:#FF3B3B;stroke-width:1.75;stroke-linejoin:round;animation:tnHeart 300ms ease-out"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"></path></svg>
+      </sc-if>
+      <sc-if value="{{ burstAnim }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;pointer-events:none">
+          <sc-for list="{{ dots }}" as="d" hint-placeholder-count="6"><span style="position:absolute;left:{{ d.x }}px;top:{{ d.y }}px;width:4px;height:4px;border-radius:50%;background:#FF3B3B;opacity:0;animation:tnBurst 300ms ease-out"></span></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ burstFrozen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;pointer-events:none">
+          <sc-for list="{{ dots }}" as="d" hint-placeholder-count="6"><span style="position:absolute;left:{{ d.x }}px;top:{{ d.y }}px;width:4px;height:4px;border-radius:50%;background:#FF3B3B;opacity:.35"></span></sc-for>
+        </div>
+      </sc-if>
+    </button>
+    <button onClick="{{ onShare }}" style="position:relative;width:24px;height:24px;padding:0;border:0;background:none;cursor:pointer">
+      <svg width="24" height="24" viewBox="0 0 24 24" style="display:block;fill:none;stroke:#8E8E93;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="m16 6-4-4-4 4"></path><path d="M12 2v13"></path></svg>
+      <sc-if value="{{ shareTip }}" hint-placeholder-val="{{ false }}">
+        <span style="position:absolute;right:34px;top:0;padding:6px 10px;border-radius:8px;background:#0A0A0A;color:#FFFFFF;font:500 12px/1 Manrope,sans-serif;white-space:nowrap">copied.</span>
+      </sc-if>
+    </button>
+    <button onClick="{{ onSave }}" style="width:24px;height:24px;padding:0;border:0;background:none;cursor:pointer">
+      <sc-if value="{{ notSaved }}" hint-placeholder-val="{{ true }}">
+        <svg width="24" height="24" viewBox="0 0 24 24" style="display:block;fill:none;stroke:#8E8E93;stroke-width:1.75;stroke-linejoin:round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"></path></svg>
+      </sc-if>
+      <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}">
+        <svg width="24" height="24" viewBox="0 0 24 24" style="display:block;fill:#0055FF;stroke:#0055FF;stroke-width:1.75;stroke-linejoin:round;animation:tnHeart 300ms ease-out"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"></path></svg>
+      </sc-if>
+    </button>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:58px;display:flex;justify-content:center">
+    <button onClick="{{ onRead }}" style="padding:4px 8px;border:0;background:none;cursor:pointer;font:600 14px/1 Manrope,sans-serif;color:#0055FF">read full article →</button>
+  </div>
+  <div style="position:absolute;left:50%;bottom:24px;transform:translateX(-50%);width:20px;height:20px">
+    <sc-if value="{{ chevPulse }}" hint-placeholder-val="{{ false }}">
+      <svg width="20" height="20" viewBox="0 0 24 24" style="display:block;fill:none;stroke:#6B6B6B;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;animation:tnPulse 600ms linear 1"><path d="m18 15-6-6-6 6"></path></svg>
+    </sc-if>
+    <sc-if value="{{ chevMid }}" hint-placeholder-val="{{ false }}">
+      <svg width="20" height="20" viewBox="0 0 24 24" style="display:block;opacity:.6;fill:none;stroke:#6B6B6B;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m18 15-6-6-6 6"></path></svg>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;story&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;},&quot;track&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{w:string}[]&quot;},&quot;liked&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;saved&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;burst&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;anim&quot;,&quot;frozen&quot;],&quot;default&quot;:&quot;anim&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;toast&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;shareTip&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;chev&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;pulse&quot;,&quot;mid&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onLike&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onSave&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onShare&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onRead&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}">
+const DOTS = [[28,10],[19,-6],[1,-6],[-8,10],[1,26],[19,26]].map(([x,y])=>({x,y}));
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props, s = p.story || {}, chev = p.chev || 'none';
+    return {
+      s, hsize: s.hs || 28, track: p.track || [], dots: DOTS,
+      liked: !!p.liked, notLiked: !p.liked,
+      burstAnim: !!p.liked && p.burst === 'anim', burstFrozen: !!p.liked && p.burst === 'frozen',
+      saved: !!p.saved, notSaved: !p.saved,
+      toast: p.toast || '', hasToast: !!p.toast, shareTip: !!p.shareTip,
+      chevPulse: chev === 'pulse', chevMid: chev === 'mid', breaking: !!s.breaking,
+      onLike: p.onLike, onSave: p.onSave, onShare: p.onShare, onRead: p.onRead
+    };
+  }
+}
+</script>
+</body>
+</html>

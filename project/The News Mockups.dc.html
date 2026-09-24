@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Manrope:wght@300;400;500;600;700;800&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#E9E9E6;font-family:Manrope,sans-serif;color:#0A0A0A;-webkit-font-smoothing:antialiased}
+a{color:#0055FF;text-decoration:none}a:hover{color:#0044CC}
+button{-webkit-tap-highlight-color:transparent}
+@keyframes tnFill{0%{transform:scaleX(0);opacity:1}70%{transform:scaleX(1);opacity:1}100%{transform:scaleX(1);opacity:0}}
+@keyframes tnLoad{0%{transform:scaleX(0)}80%,100%{transform:scaleX(1)}}
+@keyframes tnPulse{0%,100%{opacity:1}50%{opacity:.6}}
+@keyframes tnBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes tnDraw{from{stroke-dashoffset:20}to{stroke-dashoffset:0}}
+@keyframes tnSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes tnDim{from{opacity:0}to{opacity:1}}
+</style>
+</helmet>
+
+<header style="padding:56px 56px 8px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:32px">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1"><span style="font:italic 400 20px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 36px/1 Manrope,sans-serif;letter-spacing:-2px">News</span></div>
+    <p style="margin:0;max-width:520px;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">iOS mockups, 390 × 844. Seventeen screens plus card-state matrix, in the Ink &amp; Signal system. The first phone is a working prototype of the swipe feed.</p>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;width:360px">
+    <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px #D9D9D5">
+      <div style="flex:60;background:#FAFAF8"></div><div style="flex:22;background:#0A0A0A"></div><div style="flex:8;background:#6B6B6B"></div><div style="flex:10;background:#0055FF"></div>
+    </div>
+    <div style="display:flex;font:500 11px/1.3 Manrope,sans-serif;color:#6B6B6B"><span style="flex:60">60 Surface White #FAFAF8</span><span style="flex:30">30 Ink / Gray</span><span style="flex:10;color:#0055FF">10 Signal</span></div>
+  </div>
+</header>
+
+<section style="padding:48px 56px 24px;display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #D9D9D5;padding-bottom:16px"><span style="font:600 12px/1 Manrope,sans-serif;color:#6B6B6B;letter-spacing:.08em">A</span><h2 style="margin:0;font:400 32px/1.1 'DM Serif Display',serif">Live swipe feed</h2></div>
+  <div style="display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+    <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px;box-shadow:0 30px 60px rgba(10,10,10,.18)">
+      <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+        <div ref="{{ feedRef }}" onScroll="{{ onFeedScroll }}" style="position:absolute;inset:0;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain">
+          <sc-for list="{{ liveCards }}" as="c" hint-placeholder-count="1">
+            <div style="position:relative;height:844px;scroll-snap-align:start;scroll-snap-stop:always">
+              <dc-import name="FeedCard" story="{{ c.story }}" track="{{ c.track }}" liked="{{ c.liked }}" burst="anim" saved="{{ c.saved }}" toast="{{ c.toast }}" share-tip="{{ c.tip }}" chev="{{ c.chev }}" on-like="{{ c.onLike }}" on-save="{{ c.onSave }}" on-share="{{ c.onShare }}" on-read="{{ c.onRead }}" hint-size="390px,844px" style="position:absolute;inset:0"></dc-import>
+            </div>
+          </sc-for>
+          <div style="position:relative;height:844px;scroll-snap-align:start;background:#FAFAF8">
+            <div style="position:absolute;top:56px;left:16px;right:16px;display:flex;gap:3px">
+              <sc-for list="{{ trackAll }}" as="seg" hint-placeholder-count="8"><div style="flex:1;height:2.5px;border-radius:2px;background:#0055FF"></div></sc-for>
+            </div>
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:40px;height:4px;border-radius:2px;background:#F0F0EE"></div><div style="width:28px;height:4px;border-radius:2px;background:#F0F0EE"></div><div style="width:16px;height:4px;border-radius:2px;background:#F0F0EE"></div></div>
+              <h3 style="margin:24px 0 0;font:400 24px/1.25 'DM Serif Display',serif">you're caught up.</h3>
+              <p style="margin:8px 0 0;max-width:260px;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">that's everything for today. nine seconds at a time.</p>
+              <div style="display:flex;align-items:center;gap:20px;margin-top:32px">
+                <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">{{ liveCount }}</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">stories</span></div>
+                <div style="width:1px;height:32px;background:#F0F0EE"></div>
+                <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">{{ liveSecs }}</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">seconds</span></div>
+                <div style="width:1px;height:32px;background:#F0F0EE"></div>
+                <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">{{ liveSaved }}</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">saved</span></div>
+              </div>
+              <button onClick="{{ backToTop }}" style="margin-top:32px;padding:14px 28px;border:0;border-radius:50px;background:#0055FF;color:#FFFFFF;font:600 14px/1 Manrope,sans-serif;cursor:pointer">back to top</button>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:20;background:rgba(10,10,10,.35);animation:tnDim 220ms ease-out"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;top:84px;z-index:21;background:#FAFAF8;border-radius:20px 20px 0 0;overflow-y:auto;scrollbar-width:none;animation:tnSheet 220ms ease-out">
+            <div style="position:sticky;top:0;display:flex;justify-content:center;padding:10px 0 12px;background:#FAFAF8"><button onClick="{{ closeSheet }}" style="width:36px;height:5px;padding:0;border:0;border-radius:3px;background:#D6D6D2;cursor:pointer"></button></div>
+            <div style="padding:8px 24px 64px;display:flex;flex-direction:column;align-items:flex-start">
+              <span style="padding:5px 10px;border-radius:50px;background:#E8F0FF;color:#0055FF;font:600 11px/1.2 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase">{{ sheetStory.cat }}</span>
+              <h2 style="margin:16px 0 0;font:400 32px/1.25 'DM Serif Display',serif;color:#1A1A1A;text-wrap:pretty">{{ sheetStory.title }}</h2>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:16px"><div style="width:20px;height:20px;border-radius:5px;background:#F0F0EE"></div><span style="font:500 13px/1 Manrope,sans-serif">{{ sheetStory.source }}</span><span style="width:3px;height:3px;border-radius:50%;background:#6B6B6B"></span><span style="font:400 12px/1 Manrope,sans-serif;color:#6B6B6B">{{ sheetStory.time }}</span></div>
+              <div style="width:40px;height:1px;background:#F0F0EE;margin:20px 0"></div>
+              <p style="margin:0;font:400 16px/1.7 Manrope,sans-serif;color:#2A2A2A">{{ sheetStory.summary }}</p>
+              <sc-for list="{{ sheetStory.more }}" as="m" hint-placeholder-count="1">
+                <span style="margin-top:24px;font:600 11px/1 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#6B6B6B">{{ m.h }}</span>
+                <p style="margin:8px 0 0;font:400 16px/1.7 Manrope,sans-serif;color:#2A2A2A">{{ m.p }}</p>
+              </sc-for>
+              <a href="#" style="margin-top:32px;font:600 14px/1 Manrope,sans-serif;color:#0055FF">open original article →</a>
+            </div>
+          </div>
+        </sc-if>
+        <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:320px;padding-top:24px">
+      <h3 style="margin:0;font:400 24px/1.25 'DM Serif Display',serif">try it.</h3>
+      <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:12px;font:400 14px/1.6 Manrope,sans-serif;color:#2A2A2A">
+        <li>Scroll or swipe on the phone. Cards snap one per screen.</li>
+        <li>The current segment fills over nine seconds. Nothing auto-advances; the chevron pulses once when time is up.</li>
+        <li>Move on early and the segment snaps to full.</li>
+        <li>Tap heart, share and bookmark. Tap "read full article →" for the reader sheet; tap outside it to close.</li>
+        <li>The last card is the caught-up state.</li>
+      </ol>
+      <button onClick="{{ backToTop }}" style="align-self:flex-start;flex:none;white-space:nowrap;padding:12px 20px;border:1px solid #0A0A0A;border-radius:50px;background:#FFFFFF;font:600 14px/1 Manrope,sans-serif;cursor:pointer">restart session</button>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 24px;display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #D9D9D5;padding-bottom:16px"><span style="font:600 12px/1 Manrope,sans-serif;color:#6B6B6B;letter-spacing:.08em">B</span><h2 style="margin:0;font:400 32px/1.1 'DM Serif Display',serif">Launch &amp; onboarding</h2><span style="font:400 14px Manrope,sans-serif;color:#6B6B6B">Screens 01–06</span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">01 · Splash</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Wordmark at 2×. Loader is the only color on screen.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1"><span style="font:italic 400 20px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 36px/1 Manrope,sans-serif;letter-spacing:-2px">News</span></div>
+          <div style="margin-top:24px;width:40px;height:3px;border-radius:2px;background:#F0F0EE;overflow:hidden"><div style="width:100%;height:100%;background:#0055FF;transform-origin:left;animation:tnFill 1.5s ease-in-out infinite"></div></div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">02 · Landing (first launch only)</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Full-length scroll. Blue on the two CTAs only.</span></div>
+      <div style="width:410px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;border-radius:48px;overflow:hidden;background:#FAFAF8;padding-bottom:40px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:62px 20px 12px">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1"><span style="font:italic 400 12px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 20px/1 Manrope,sans-serif;letter-spacing:-1px">News</span></div>
+            <button style="padding:10px 16px;border:0;border-radius:50px;background:#0055FF;color:#FFFFFF;font:600 13px/1 Manrope,sans-serif">Start Reading</button>
+          </div>
+          <div style="padding:56px 24px 0;display:flex;flex-direction:column;align-items:flex-start">
+            <span style="font:600 11px/1 Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6B6B6B">AI &amp; technology, daily</span>
+            <h1 style="margin:16px 0 0;font:400 38px/1.1 'DM Serif Display',serif;color:#0A0A0A">be dangerously well informed.</h1>
+            <p style="margin:16px 0 0;font:300 16px/1.6 Manrope,sans-serif;color:#6B6B6B;text-wrap:pretty">The day's most important stories in AI and technology, one full-screen card each. Read in nine seconds, swipe for the next.</p>
+            <button style="margin-top:32px;padding:16px 28px;border:0;border-radius:50px;background:#0055FF;color:#FFFFFF;font:600 16px/1 Manrope,sans-serif">start reading free</button>
+          </div>
+          <div style="padding:56px 24px 0;display:flex;flex-direction:column;gap:12px">
+            <span style="font:600 11px/1 Manrope,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6B6B6B">what we cover</span>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ landingCats }}" as="t" hint-placeholder-count="8"><span style="padding:8px 14px;border-radius:50px;background:#F0F0EE;font:600 13px/1 Manrope,sans-serif;color:#0A0A0A">{{ t }}</span></sc-for>
+            </div>
+          </div>
+          <div style="padding:48px 20px 0;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ features }}" as="f" hint-placeholder-count="3">
+              <div style="padding:20px;border-radius:12px;background:#FFFFFF;border:1px solid #F0F0EE;display:flex;flex-direction:column;gap:8px">
+                <span style="font:600 11px/1 Manrope,sans-serif;color:#6B6B6B;letter-spacing:.06em">{{ f.n }}</span>
+                <h3 style="margin:0;font:400 20px/1.25 'DM Serif Display',serif">{{ f.t }}</h3>
+                <p style="margin:0;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">{{ f.d }}</p>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin:48px 20px 0;padding:20px 0;border-top:1px solid #F0F0EE;border-bottom:1px solid #F0F0EE;display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;align-items:center;text-align:center">
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">9s</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">per story</span></div>
+            <div style="height:32px;background:#F0F0EE"></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">8</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">stories a day</span></div>
+            <div style="height:32px;background:#F0F0EE"></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">14</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">topics</span></div>
+          </div>
+          <footer style="padding:48px 24px 16px;display:flex;flex-direction:column;align-items:flex-start;gap:12px">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1"><span style="font:italic 400 12px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 20px/1 Manrope,sans-serif;letter-spacing:-1px">News</span></div>
+            <span style="font:400 13px/1.4 Manrope,sans-serif;color:#6B6B6B">nine seconds. the whole picture.</span>
+            <div style="display:flex;gap:16px;font:500 12px/1 Manrope,sans-serif;color:#6B6B6B"><span>About</span><span>Privacy</span><span>Terms</span></div>
+            <span style="margin-top:8px;font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">A Lycoris Product</span>
+          </footer>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">03 · Welcome transition</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Bridges landing to topic selection (~1.5s).</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1"><span style="font:italic 400 16px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 28px/1 Manrope,sans-serif;letter-spacing:-2px">News</span></div>
+          <span style="margin-top:20px;font:400 13px/1 Manrope,sans-serif;color:#6B6B6B">loading your feed.</span>
+          <div style="margin-top:16px;width:120px;height:3px;border-radius:2px;background:#F0F0EE;overflow:hidden"><div style="width:100%;height:100%;background:#0055FF;transform-origin:left;animation:tnLoad 1.9s linear infinite"></div></div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">04 · Topic selection · step 1 of 3</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Interactive. Pick a third topic to unlock continue.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:62px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font:500 14px/1 Manrope,sans-serif;color:#6B6B6B">Skip</span>
+            <div style="display:flex;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#0055FF"></span><span style="width:6px;height:6px;border-radius:50%;background:#F0F0EE"></span><span style="width:6px;height:6px;border-radius:50%;background:#F0F0EE"></span></div>
+            <span style="font:600 14px/1 Manrope,sans-serif;color:{{ nextColor }};transition:color 150ms">Next</span>
+          </div>
+          <div style="position:absolute;top:128px;left:0;right:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 24px">
+            <h2 style="margin:0;font:400 28px/1.25 'DM Serif Display',serif">what do you follow?</h2>
+            <p style="margin:8px 0 0;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">pick at least three. you can change this anytime.</p>
+          </div>
+          <div style="position:absolute;top:232px;left:20px;right:20px;display:flex;flex-wrap:wrap;justify-content:center;gap:10px">
+            <sc-for list="{{ chips }}" as="c" hint-placeholder-count="14">
+              <sc-if value="{{ c.unsel }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ c.toggle }}" style="display:flex;align-items:center;gap:6px;padding:10px 18px;border-radius:50px;background:#FFFFFF;border:0.5px solid #F0F0EE;box-shadow:0 1px 2px rgba(10,10,10,.04);font:600 14px/1.2 Manrope,sans-serif;color:#0A0A0A;cursor:pointer">{{ c.t }}</button>
+              </sc-if>
+              <sc-if value="{{ c.sel }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ c.toggle }}" style="display:flex;align-items:center;gap:6px;padding:10px 18px 10px 14px;border-radius:50px;background:#E8F0FF;border:0.5px solid #0055FF;font:600 14px/1.2 Manrope,sans-serif;color:#0055FF;cursor:pointer;animation:tnBounce 200ms ease-out">
+                  <svg width="12" height="12" viewBox="0 0 24 24" style="fill:none;stroke:#0055FF;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:20;animation:tnDraw 200ms ease-out both"><path d="M20 6 9 17l-5-5"></path></svg>{{ c.t }}
+                </button>
+              </sc-if>
+            </sc-for>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:44px;display:flex;flex-direction:column;align-items:center;gap:12px">
+            <span style="font:400 12px/1 Manrope,sans-serif;color:#6B6B6B">{{ countText }}</span>
+            <button style="width:100%;height:52px;border:0;border-radius:50px;background:{{ btnBg }};color:{{ btnFg }};font:600 16px/1 Manrope,sans-serif;transition:background 150ms,color 150ms">continue →</button>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">05 · Pace calibration · step 2 of 3</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Interactive. The real 9-second timer, taught once.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:62px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font:500 14px/1 Manrope,sans-serif;color:#6B6B6B">Skip</span>
+            <div style="display:flex;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#F0F0EE"></span><span style="width:6px;height:6px;border-radius:50%;background:#0055FF"></span><span style="width:6px;height:6px;border-radius:50%;background:#F0F0EE"></span></div>
+            <span style="font:600 14px/1 Manrope,sans-serif;color:{{ calNextColor }};transition:color 150ms">Next</span>
+          </div>
+          <div style="position:absolute;top:112px;left:0;right:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 24px">
+            <h2 style="margin:0;font:400 24px/1.25 'DM Serif Display',serif">let's find your pace.</h2>
+            <p style="margin:8px 0 0;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">read this the way you normally would.</p>
+          </div>
+          <div style="position:absolute;top:196px;left:20px;right:20px;padding:16px 20px 20px;border-radius:12px;background:#FFFFFF;border:1px solid #F0F0EE;display:flex;flex-direction:column;align-items:flex-start">
+            <div style="align-self:stretch;height:2.5px;border-radius:2px;background:#F0F0EE;overflow:hidden"><div style="height:100%;width:{{ calW }};background:#0055FF;transition:width 100ms linear"></div></div>
+            <span style="margin-top:20px;padding:5px 10px;border-radius:50px;background:#E8F0FF;color:#0055FF;font:600 11px/1.2 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase">AI Models</span>
+            <h3 style="margin:16px 0 0;font:400 24px/1.25 'DM Serif Display',serif;color:#1A1A1A;text-wrap:pretty">OpenAI releases GPT-5 with reasoning capabilities that exceed PhD-level benchmarks</h3>
+            <div style="width:40px;height:1px;background:#F0F0EE;margin:16px 0"></div>
+            <p style="margin:0;font:400 15px/1.7 Manrope,sans-serif;color:#2A2A2A">{{ gpt.summary }}</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:16px"><div style="width:20px;height:20px;border-radius:5px;background:#F0F0EE"></div><span style="font:500 13px/1 Manrope,sans-serif">The Verge</span><span style="width:3px;height:3px;border-radius:50%;background:#6B6B6B"></span><span style="font:400 12px/1 Manrope,sans-serif;color:#6B6B6B">2h ago</span></div>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:44px;display:flex;flex-direction:column;align-items:center;gap:12px">
+            <sc-if value="{{ calDone }}" hint-placeholder-val="{{ false }}"><span style="font:400 13px/1.5 Manrope,sans-serif;color:#6B6B6B;text-align:center">{{ calText }}</span></sc-if>
+            <button onClick="{{ calTap }}" style="width:100%;height:52px;border:1px solid #0A0A0A;border-radius:50px;background:#FFFFFF;color:#0A0A0A;font:600 16px/1 Manrope,sans-serif;cursor:pointer">{{ calLabel }}</button>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">06 · Notifications · step 3 of 3</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">In-app preview; the CTA triggers the OS dialog.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:62px;left:20px;right:20px;display:flex;align-items:center;justify-content:space-between">
+            <span style="font:500 14px/1 Manrope,sans-serif;color:#6B6B6B">Skip</span>
+            <div style="display:flex;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:#F0F0EE"></span><span style="width:6px;height:6px;border-radius:50%;background:#F0F0EE"></span><span style="width:6px;height:6px;border-radius:50%;background:#0055FF"></span></div>
+            <span style="width:28px"></span>
+          </div>
+          <div style="position:absolute;top:176px;left:0;right:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 24px">
+            <h2 style="margin:0;font:400 24px/1.25 'DM Serif Display',serif">one story a day, right on time.</h2>
+            <p style="margin:8px 0 0;max-width:280px;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">we'll send your most important story once daily. nothing else.</p>
+          </div>
+          <div style="position:absolute;top:320px;left:16px;right:16px">
+            <div style="position:absolute;left:14px;right:14px;top:16px;height:80px;border-radius:12px;background:#FFFFFF;box-shadow:0 0 0 1px #F0F0EE;opacity:.6"></div>
+            <div style="position:relative;padding:12px 14px;border-radius:12px;background:#FFFFFF;box-shadow:0 12px 32px rgba(10,10,10,.08),0 0 0 1px #F0F0EE;display:flex;gap:10px;align-items:flex-start">
+              <div style="flex:none;width:38px;height:38px;border-radius:9px;background:#FAFAF8;border:1px solid #F0F0EE;display:flex;flex-direction:column;justify-content:center;padding-left:5px;line-height:1"><span style="font:italic 400 10px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 12px/1 Manrope,sans-serif;letter-spacing:-.5px">News</span></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                <div style="display:flex;justify-content:space-between"><span style="font:600 13px/1.3 Manrope,sans-serif">The News</span><span style="font:400 12px/1.3 Manrope,sans-serif;color:#6B6B6B">now</span></div>
+                <span style="font:400 13px/1.4 Manrope,sans-serif;color:#0A0A0A">AI Models · OpenAI releases GPT-5 with reasoning capabilities that exceed PhD-level benchmarks</span>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;left:20px;right:20px;bottom:44px;display:flex;flex-direction:column;align-items:center;gap:20px">
+            <button style="width:100%;height:52px;border:0;border-radius:50px;background:#0055FF;color:#FFFFFF;font:600 16px/1 Manrope,sans-serif">allow notifications</button>
+            <span style="font:500 14px/1 Manrope,sans-serif;color:#6B6B6B">not now</span>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 24px;display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #D9D9D5;padding-bottom:16px"><span style="font:600 12px/1 Manrope,sans-serif;color:#6B6B6B;letter-spacing:.08em">C</span><h2 style="margin:0;font:400 32px/1.1 'DM Serif Display',serif">Swipe feed &amp; card states</h2><span style="font:400 14px Manrope,sans-serif;color:#6B6B6B">Screens 07–13 + state matrix</span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+    <sc-for list="{{ feedStates }}" as="f" hint-placeholder-count="5">
+      <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">{{ f.n }} · {{ f.label }}</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">{{ f.desc }}</span></div>
+        <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+          <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+            <dc-import name="FeedCard" story="{{ f.story }}" track="{{ f.track }}" liked="{{ f.liked }}" burst="frozen" saved="{{ f.saved }}" toast="{{ f.toast }}" share-tip="{{ f.tip }}" chev="{{ f.chev }}" hint-size="390px,844px" style="position:absolute;inset:0"></dc-import>
+            <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">12 · Mid-swipe</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Current card 40% up at 0.6; next enters at 0.8.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;inset:0;transform:translateY(-40%);opacity:.6"><dc-import name="FeedCard" story="{{ gpt }}" track="{{ trackB }}" chev="mid" hint-size="390px,844px" style="position:absolute;inset:0"></dc-import></div>
+          <div style="position:absolute;inset:0;transform:translateY(40%);opacity:.8;box-shadow:0 -12px 32px rgba(10,10,10,.06)"><dc-import name="FeedCard" story="{{ eu }}" track="{{ trackB }}" hint-size="390px,844px" style="position:absolute;inset:0"></dc-import></div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">13 · You're caught up</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Final card of the day's queue.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:56px;left:16px;right:16px;display:flex;gap:3px">
+            <sc-for list="{{ trackAll }}" as="seg" hint-placeholder-count="8"><div style="flex:1;height:2.5px;border-radius:2px;background:#0055FF"></div></sc-for>
+          </div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:40px;height:4px;border-radius:2px;background:#F0F0EE"></div><div style="width:28px;height:4px;border-radius:2px;background:#F0F0EE"></div><div style="width:16px;height:4px;border-radius:2px;background:#F0F0EE"></div></div>
+            <h3 style="margin:24px 0 0;font:400 24px/1.25 'DM Serif Display',serif">you're caught up.</h3>
+            <p style="margin:8px 0 0;max-width:260px;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">that's everything for today. nine seconds at a time.</p>
+            <div style="display:flex;align-items:center;gap:20px;margin-top:32px">
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">8</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">stories</span></div>
+              <div style="width:1px;height:32px;background:#F0F0EE"></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">72</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">seconds</span></div>
+              <div style="width:1px;height:32px;background:#F0F0EE"></div>
+              <div style="display:flex;flex-direction:column;gap:4px"><span style="font:600 18px/1 Manrope,sans-serif">3</span><span style="font:400 11px/1 Manrope,sans-serif;color:#6B6B6B">saved</span></div>
+            </div>
+            <button style="margin-top:32px;padding:14px 28px;border:0;border-radius:50px;background:#0055FF;color:#FFFFFF;font:600 14px/1 Manrope,sans-serif">back to top</button>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:48px 56px 80px;display:flex;flex-direction:column;gap:32px">
+  <div style="display:flex;align-items:baseline;gap:16px;border-bottom:1px solid #D9D9D5;padding-bottom:16px"><span style="font:600 12px/1 Manrope,sans-serif;color:#6B6B6B;letter-spacing:.08em">D</span><h2 style="margin:0;font:400 32px/1.1 'DM Serif Display',serif">Secondary views</h2><span style="font:400 14px Manrope,sans-serif;color:#6B6B6B">Screens 14–17</span></div>
+  <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">14 · List view (toggle)</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">For scanning. Swipe stays the default on launch.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:62px;left:20px;right:20px;height:30px;display:flex;align-items:center;justify-content:space-between">
+            <div style="width:28px;height:28px;border-radius:50%;background:#F0F0EE;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" style="fill:none;stroke:#6B6B6B;stroke-width:1.75;stroke-linecap:round"><circle cx="12" cy="8" r="4.5"></circle><path d="M20 21a8 8 0 0 0-16 0"></path></svg></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1"><span style="font:italic 400 10px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 18px/1 Manrope,sans-serif;letter-spacing:-1px">News</span></div>
+            <div style="display:flex;padding:2px;border-radius:50px;background:#F0F0EE">
+              <div style="width:30px;height:24px;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:#8E8E93;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m12 2 10 5-10 5L2 7Z"></path><path d="m2 17 10 5 10-5"></path><path d="m2 12 10 5 10-5"></path></svg></div>
+              <div style="width:30px;height:24px;border-radius:50px;background:#FFFFFF;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" style="fill:none;stroke:#0A0A0A;stroke-width:2;stroke-linecap:round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></div>
+            </div>
+          </div>
+          <div style="position:absolute;top:108px;left:0;right:0;display:flex;gap:8px;padding:0 20px;overflow:hidden">
+            <span style="flex:none;padding:8px 14px;border-radius:50px;background:#0055FF;color:#FFFFFF;font:600 13px/1 Manrope,sans-serif">All</span>
+            <sc-for list="{{ filterCats }}" as="t" hint-placeholder-count="5"><span style="flex:none;padding:8px 14px;border-radius:50px;background:#F0F0EE;color:#0A0A0A;font:600 13px/1 Manrope,sans-serif">{{ t }}</span></sc-for>
+          </div>
+          <div style="position:absolute;top:156px;left:16px;right:16px;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ listItems }}" as="l" hint-placeholder-count="4">
+              <div style="padding:16px;border-radius:12px;background:#FFFFFF;border:1px solid #F0F0EE;display:flex;flex-direction:column;align-items:flex-start;gap:8px">
+                <span style="padding:4px 8px;border-radius:50px;background:#E8F0FF;color:#0055FF;font:600 10px/1.2 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase">{{ l.cat }}</span>
+                <h4 style="margin:0;font:400 20px/1.25 'DM Serif Display',serif;color:#1A1A1A;text-wrap:pretty">{{ l.title }}</h4>
+                <p style="margin:0;font:400 13px/1.5 Manrope,sans-serif;color:#6B6B6B;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ l.summary }}</p>
+                <div style="align-self:stretch;display:flex;align-items:center;gap:12px;margin-top:4px">
+                  <span style="flex:none;font:500 12px/1 Manrope,sans-serif;color:#0A0A0A">{{ l.source }} <span style="color:#6B6B6B;font-weight:400">· {{ l.time }}</span></span>
+                  <div style="flex:1;height:2px;border-radius:1px;background:#F0F0EE;overflow:hidden"><div style="height:100%;width:{{ l.prog }};background:#0055FF"></div></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">15 · Reader sheet</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">90% sheet over the card. Exits only via the final link.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <dc-import name="FeedCard" story="{{ gpt }}" track="{{ trackA }}" hint-size="390px,844px" style="position:absolute;inset:0"></dc-import>
+          <div style="position:absolute;inset:0;background:rgba(10,10,10,.35)"></div>
+          <div style="position:absolute;left:0;right:0;bottom:0;top:84px;background:#FAFAF8;border-radius:20px 20px 0 0;overflow-y:auto;scrollbar-width:none">
+            <div style="display:flex;justify-content:center;padding:10px 0 12px"><div style="width:36px;height:5px;border-radius:3px;background:#D6D6D2"></div></div>
+            <div style="padding:8px 24px 64px;display:flex;flex-direction:column;align-items:flex-start">
+              <span style="padding:5px 10px;border-radius:50px;background:#E8F0FF;color:#0055FF;font:600 11px/1.2 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase">AI Models</span>
+              <h2 style="margin:16px 0 0;font:400 32px/1.25 'DM Serif Display',serif;color:#1A1A1A;text-wrap:pretty">OpenAI releases GPT-5 with reasoning capabilities that exceed PhD-level benchmarks</h2>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:16px"><div style="width:20px;height:20px;border-radius:5px;background:#F0F0EE"></div><span style="font:500 13px/1 Manrope,sans-serif">The Verge</span><span style="width:3px;height:3px;border-radius:50%;background:#6B6B6B"></span><span style="font:400 12px/1 Manrope,sans-serif;color:#6B6B6B">2h ago</span></div>
+              <div style="width:40px;height:1px;background:#F0F0EE;margin:20px 0"></div>
+              <p style="margin:0;font:400 16px/1.7 Manrope,sans-serif;color:#2A2A2A">{{ gpt.summary }}</p>
+              <sc-for list="{{ gpt.more }}" as="m" hint-placeholder-count="3">
+                <span style="margin-top:24px;font:600 11px/1 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#6B6B6B">{{ m.h }}</span>
+                <p style="margin:8px 0 0;font:400 16px/1.7 Manrope,sans-serif;color:#2A2A2A">{{ m.p }}</p>
+              </sc-for>
+              <a href="#" style="margin-top:32px;font:600 14px/1 Manrope,sans-serif;color:#0055FF">open original article →</a>
+            </div>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">16 · Profile &amp; settings</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">From the avatar, top-left of the feed.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:62px;left:20px;right:20px;height:28px;display:flex;align-items:center;justify-content:center">
+            <svg width="24" height="24" viewBox="0 0 24 24" style="position:absolute;left:-4px;fill:none;stroke:#0A0A0A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg>
+            <span style="font:600 15px/1 Manrope,sans-serif">Profile</span>
+          </div>
+          <div style="position:absolute;top:116px;left:20px;right:20px;display:flex;align-items:center;gap:16px">
+            <div style="width:56px;height:56px;border-radius:50%;background:#F0F0EE;display:flex;align-items:center;justify-content:center;font:600 18px/1 Manrope,sans-serif;color:#6B6B6B">MC</div>
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font:400 24px/1.1 'DM Serif Display',serif">Maya Chen</span><span style="font:400 13px/1 Manrope,sans-serif;color:#6B6B6B">reading since march 2026</span></div>
+          </div>
+          <div style="position:absolute;top:204px;left:0;right:0;border-top:0.5px solid #F0F0EE">
+            <sc-for list="{{ rowsA }}" as="r" hint-placeholder-count="4">
+              <div style="height:56px;padding:0 20px;display:flex;align-items:center;gap:8px;border-bottom:0.5px solid #F0F0EE">
+                <span style="flex:1;font:500 15px/1 Manrope,sans-serif;color:#0A0A0A">{{ r.l }}</span>
+                <span style="font:400 13px/1 Manrope,sans-serif;color:#6B6B6B">{{ r.v }}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:#8E8E93;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m9 18 6-6-6-6"></path></svg>
+              </div>
+            </sc-for>
+            <div style="height:56px;padding:0 20px;display:flex;align-items:center;border-bottom:0.5px solid #F0F0EE">
+              <span style="flex:1;font:500 15px/1 Manrope,sans-serif">Dark Mode</span>
+              <div style="display:flex;padding:2px;border-radius:50px;background:#F0F0EE;font:600 12px/1 Manrope,sans-serif">
+                <span style="padding:7px 12px;border-radius:50px;background:#FFFFFF;color:#0A0A0A;box-shadow:0 1px 2px rgba(10,10,10,.06)">System</span><span style="padding:7px 12px;color:#6B6B6B">Light</span><span style="padding:7px 12px;color:#6B6B6B">Dark</span>
+              </div>
+            </div>
+            <div style="height:56px;padding:0 20px;display:flex;align-items:center;border-bottom:0.5px solid #F0F0EE">
+              <span style="flex:1;font:500 15px/1 Manrope,sans-serif">About The News</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" style="fill:none;stroke:#8E8E93;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m9 18 6-6-6-6"></path></svg>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:48px;display:flex;flex-direction:column;align-items:center;gap:12px">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;line-height:1;opacity:.5"><span style="font:italic 400 10px/1 'DM Serif Display',serif;color:#6B6B6B">The</span><span style="font:800 18px/1 Manrope,sans-serif;letter-spacing:-1px">News</span></div>
+            <span style="font:400 12px/1 Manrope,sans-serif;color:#6B6B6B">A Lycoris Product</span>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">17 · Saved stories</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Filled blue bookmark confirms saved state.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:62px;left:16px;height:28px;display:flex;align-items:center"><svg width="24" height="24" viewBox="0 0 24 24" style="fill:none;stroke:#0A0A0A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg></div>
+          <div style="position:absolute;top:108px;left:20px;right:20px;display:flex;align-items:baseline;justify-content:space-between"><h2 style="margin:0;font:400 28px/1.1 'DM Serif Display',serif">saved stories.</h2><span style="font:400 13px/1 Manrope,sans-serif;color:#6B6B6B">3 stories</span></div>
+          <div style="position:absolute;top:164px;left:16px;right:16px;display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ savedItems }}" as="l" hint-placeholder-count="3">
+              <div style="position:relative;padding:16px 48px 16px 16px;border-radius:12px;background:#FFFFFF;border:1px solid #F0F0EE;display:flex;flex-direction:column;align-items:flex-start;gap:8px">
+                <svg width="20" height="20" viewBox="0 0 24 24" style="position:absolute;top:16px;right:16px;fill:#0055FF;stroke:#0055FF;stroke-width:1.75;stroke-linejoin:round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"></path></svg>
+                <span style="padding:4px 8px;border-radius:50px;background:#E8F0FF;color:#0055FF;font:600 10px/1.2 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase">{{ l.cat }}</span>
+                <h4 style="margin:0;font:400 20px/1.25 'DM Serif Display',serif;color:#1A1A1A;text-wrap:pretty">{{ l.title }}</h4>
+                <span style="font:500 12px/1 Manrope,sans-serif;color:#0A0A0A">{{ l.source }} <span style="color:#6B6B6B;font-weight:400">· {{ l.when }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;width:410px">
+      <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 12px/1.4 Manrope,sans-serif">17 · Saved stories — empty</span><span style="font:400 12px/1.4 Manrope,sans-serif;color:#6B6B6B">Zero saves. Reuses the editorial mark.</span></div>
+      <div style="width:410px;height:864px;padding:10px;background:#0A0A0A;border-radius:58px">
+        <div style="position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:#FAFAF8">
+          <div style="position:absolute;top:62px;left:16px;height:28px;display:flex;align-items:center"><svg width="24" height="24" viewBox="0 0 24 24" style="fill:none;stroke:#0A0A0A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="m15 18-6-6 6-6"></path></svg></div>
+          <div style="position:absolute;top:108px;left:20px;right:20px;display:flex;align-items:baseline;justify-content:space-between"><h2 style="margin:0;font:400 28px/1.1 'DM Serif Display',serif">saved stories.</h2><span style="font:400 13px/1 Manrope,sans-serif;color:#6B6B6B">0 stories</span></div>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;text-align:center">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:40px;height:4px;border-radius:2px;background:#F0F0EE"></div><div style="width:28px;height:4px;border-radius:2px;background:#F0F0EE"></div><div style="width:16px;height:4px;border-radius:2px;background:#F0F0EE"></div></div>
+            <h3 style="margin:24px 0 0;font:400 24px/1.25 'DM Serif Display',serif">nothing saved yet.</h3>
+            <p style="margin:8px 0 0;max-width:260px;font:400 14px/1.6 Manrope,sans-serif;color:#6B6B6B">tap the bookmark icon on any story to save it here.</p>
+          </div>
+          <dc-import name="PhoneChrome" hint-size="390px,844px" style="position:absolute;inset:0;z-index:40;pointer-events:none"></dc-import>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="margin:24px 0 0;font:400 13px/1.5 Manrope,sans-serif;color:#6B6B6B">The News. nine seconds. the whole picture. A Lycoris Product.</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const S = [
+ {id:'gpt5',cat:'AI Models',source:'The Verge',time:'2h ago',title:'OpenAI releases GPT-5 with reasoning capabilities that exceed PhD-level benchmarks',
+  summary:"OpenAI's newest flagship model scored above human PhD experts on graduate-level science, math and coding benchmarks in the company's own evaluations. GPT-5 plans multi-step problems before answering and checks its work as it reasons. It is rolling out to paid ChatGPT users today, with developer API access next week. Independent researchers have not yet replicated the results.",
+  more:[{h:'what changed',p:'GPT-5 spends more computation deciding how to approach a problem before it writes an answer. OpenAI says this reduces factual errors on long tasks and lets the model recover when an early step turns out to be wrong.'},
+        {h:'why it matters',p:'Reasoning benchmarks have become the main way labs compare frontier models. If the results hold up under independent testing, GPT-5 would be the first widely available model to beat expert baselines across science, math and code at once.'},
+        {h:"what's next",p:'OpenAI will publish a system card with its safety evaluations alongside the API launch. Rival labs are expected to answer with their own releases within months.'}]},
+ {id:'eu',cat:'AI Policy',source:'Reuters',time:'3h ago',title:'EU starts enforcing AI Act rules for general-purpose models',
+  summary:'Providers of large general-purpose AI models in the European Union must now publish training-data summaries, document their safety testing and report serious incidents to the new AI Office. Fines can reach 3% of global annual turnover. Several US labs say they already comply; smaller open-source developers are asking Brussels for clearer guidance on what counts as a systemic-risk model.',
+  more:[{h:'why it matters',p:'The EU is the first major market to put binding obligations on the companies that build foundation models, and other regulators are watching how enforcement works in practice.'}]},
+ {id:'nv',cat:'AI Hardware',source:'Bloomberg',time:'4h ago',title:"Nvidia's next-generation chips promise three times the inference efficiency",
+  summary:'The new accelerators pair faster memory with a redesigned interconnect built for running AI models rather than training them. Nvidia says data centres can serve the same workload with roughly a third of the power. Cloud providers have already placed orders for next year, while AMD and several chip startups race to close the gap on price.',
+  more:[{h:'why it matters',p:'Running models, not training them, is now the largest share of AI compute spending. Efficiency gains here lower the cost of every chatbot query and API call.'}]},
+ {id:'robot',cat:'Robotics',source:'IEEE Spectrum',time:'5h ago',title:'Humanoid robots start full shifts in a European logistics warehouse',
+  summary:"A fleet of forty two-legged robots now moves totes between shelving and conveyor lines across two shifts a day. The operator says the machines reach about 60% of a human picker's throughput but can work through the night. Unions have been briefed, and no roles are being cut during the twelve-month trial, which will be reviewed quarterly.",
+  more:[{h:'why it matters',p:'Most humanoid robots have stayed in demos. A year-long trial in a working warehouse is one of the first tests of whether they can earn their cost on real shifts.'}]},
+ {id:'qc',cat:'Quantum Computing',source:'Nature',time:'6h ago',title:'Error-corrected qubits hold their state long enough for useful calculations',
+  summary:'Physicists kept a group of logical qubits stable for over an hour by continuously detecting and fixing errors across hundreds of physical qubits. Previous records were measured in seconds. The result does not make quantum computers practical yet, but it shows error correction scaling in the right direction, which researchers call the field\'s most important open question.',
+  more:[{h:'why it matters',p:'Useful quantum computing depends on error correction getting better as machines get bigger. This is evidence that it can.'}]},
+ {id:'lab',cat:'Startups',source:'TechCrunch',time:'7h ago',title:'Open-source AI lab raises $600M to build smaller, faster models',
+  summary:'The two-year-old lab builds compact models that run on a single laptop GPU while matching larger systems on everyday tasks. The round values the company at $4.5 billion. Its founders say the money will go to compute and to a team that publishes weights and training recipes openly, which has made its models popular with enterprise developers.',
+  more:[{h:'why it matters',p:'Investors are backing the idea that many businesses want models they can run and inspect themselves rather than rent through an API.'}]},
+ {id:'cyber',cat:'Cybersecurity',source:'Financial Times',time:'8h ago',title:'Regulators warn banks about deepfake voice scams hitting call centres',
+  summary:'Fraudsters are using cloned customer voices, built from a few seconds of social-media audio, to pass phone-based identity checks and move money. Supervisors in the UK and Singapore have told banks to stop relying on voice alone. Several lenders are adding callback verification and in-app confirmation for transfers above set limits.',
+  more:[{h:'why it matters',p:'Voice was one of the last identity checks many banks treated as reliable. Replacing it touches millions of customer accounts.'}]},
+ {id:'sat',cat:'Space',source:'Ars Technica',time:'9h ago',title:'Satellites begin processing images in orbit to cut download times',
+  summary:'An Earth-observation operator has switched on onboard AI that filters out cloudy and redundant images before they are sent to the ground. The company says this cuts downlink data by around 80% and gets usable wildfire and flood imagery to emergency teams within minutes rather than hours. Other operators are testing similar chips.',
+  more:[{h:'why it matters',p:'Ground-station bandwidth, not cameras, has been the bottleneck for satellite imagery. Processing in orbit moves that limit.'}]}
+];
+const BREAK = {id:'brk',cat:'AI Policy',source:'Associated Press',time:'12m ago',breaking:true,title:'US and EU agree joint safety testing for the most powerful AI models',
+  summary:'Officials announced a shared framework under which frontier AI models will be evaluated by government safety institutes on both sides of the Atlantic before public release. Labs will submit models for testing on cybersecurity, biological risk and autonomy. The agreement takes effect in January and covers models trained above a set compute threshold.'};
+[...S, BREAK].forEach(s => { s.hs = s.title.length > 80 ? 26 : s.title.length > 60 ? 28 : 32; s.ini = s.source[0]; });
+const TOPICS = ['AI Models','AI Policy','AI Research','AI Tools','AI Business','AI & Society','Quantum Computing','Robotics','Big Tech','Startups','AI Hardware','Cybersecurity','Climate Tech','Space'];
+const T = a => a.map(w => ({w: w + '%'}));
+const TR_A = T([100,100,40,0,0,0,0,0]), TR_B = T([100,100,100,0,0,0,0,0]), TR_ALL = T([100,100,100,100,100,100,100,100]);
+const FEED_STATES = [
+ {n:'07',label:'Swipe feed — default',desc:'Third story of eight, timer 40% through.',story:S[0],track:TR_A,chev:'none'},
+ {n:'08',label:'Liked',desc:'Heart filled Alert Red; burst frozen mid-fade.',story:S[0],track:TR_A,liked:true,chev:'none'},
+ {n:'09',label:'Bookmarked',desc:'Bookmark filled Signal Blue; toast confirms.',story:S[0],track:TR_A,saved:true,toast:'saved to reading list',chev:'none'},
+ {n:'10',label:'Timer complete',desc:'Segment full. Chevron mid-pulse; nothing auto-advances.',story:S[0],track:TR_B,chev:'mid'},
+ {n:'11',label:'Breaking',desc:'The only place Alert Red is used as a fill.',story:BREAK,track:TR_A,chev:'none'},
+ {n:'Matrix',label:'Liked + bookmarked',desc:'Independent states, both active.',story:S[0],track:TR_A,liked:true,saved:true,chev:'none'},
+ {n:'Matrix',label:'Shared',desc:'"copied." tooltip after share.',story:S[0],track:TR_A,tip:true,chev:'none'}
+];
+const LIST = S.slice(0,5).map((s,i) => ({...s, prog: ['100%','100%','40%','0%','0%'][i]}));
+const SAVED = [{...S[0],when:'saved today'},{...S[2],when:'saved yesterday'},{...S[4],when:'saved mon'}];
+const STATIC = {
+  gpt:S[0], eu:S[1], trackA:TR_A, trackB:TR_B, trackAll:TR_ALL, feedStates:FEED_STATES, listItems:LIST, savedItems:SAVED,
+  landingCats:['AI Models','AI Policy','Robotics','Quantum Computing','Big Tech','Startups','Cybersecurity','Space'],
+  filterCats:['AI Models','AI Policy','Robotics','Big Tech','Space'],
+  features:[{n:'01',t:'nine seconds a story.',d:"Every story is edited down to what happened, why it matters and who reported it. A quiet timer shows when you've had enough time."},
+            {n:'02',t:"swipe, don't scroll.",d:'One full-screen card at a time. Swipe up for the next story, down to go back. No endless list, no autoplay.'},
+            {n:'03',t:'a finish line.',d:"The day's queue ends. When you're caught up, we tell you, and you can put your phone down."}],
+  rowsA:[{l:'Topics',v:'6 followed'},{l:'Notifications',v:'daily, 8:00'},{l:'Reading History',v:''},{l:'Saved Stories',v:'3'}]
+};
+class Component extends DCLogic {
+  feedRef = React.createRef();
+  state = (() => { const t = performance.now(); return {topics:['AI Models','Robotics'], calStart:t, calResult:null, idx:0, start:t, now:t, done:{}, liked:{}, saved:{}, toast:null, tip:null, sheet:false}; })();
+  componentDidMount() {
+    this.iv = setInterval(() => {
+      const s = this.state, t = performance.now();
+      if ((s.idx < S.length && !s.done[s.idx] && t - s.start < 9300) || (s.calResult == null && t - s.calStart < 9300)) this.setState({now:t});
+    }, 100);
+  }
+  componentWillUnmount() { clearInterval(this.iv); clearTimeout(this.tt); clearTimeout(this.st); }
+  onFeedScroll = e => {
+    const i = Math.round(e.currentTarget.scrollTop / 844);
+    if (i === this.state.idx) return;
+    const t = performance.now();
+    this.setState(s => { const done = {...s.done}; for (let k = 0; k < i; k++) done[k] = true; if (s.idx < S.length && (t - s.start) >= 9000) done[s.idx] = true; return {idx:i, start:t, now:t, done, sheet:false}; });
+  };
+  backToTop = () => { const el = this.feedRef.current; if (el) el.scrollTo({top:0, behavior:'smooth'}); const t = performance.now(); this.setState({idx:0, start:t, now:t, done:{}}); };
+  toggleLike = id => this.setState(s => ({liked:{...s.liked, [id]:!s.liked[id]}}));
+  toggleSave = id => {
+    const on = !this.state.saved[id];
+    this.setState(s => ({saved:{...s.saved, [id]:on}, toast: on ? id : null}));
+    clearTimeout(this.tt); if (on) this.tt = setTimeout(() => this.setState({toast:null}), 1800);
+  };
+  share = id => { this.setState({tip:id}); clearTimeout(this.st); this.st = setTimeout(() => this.setState({tip:null}), 1400); };
+  renderVals() {
+    const st = this.state, N = S.length;
+    const pct = Math.min(100, Math.max(0, (st.now - st.start) / 90));
+    const track = S.map((_, i) => ({w: (st.done[i] ? 100 : i === st.idx ? pct : 0) + '%'}));
+    const timeUp = st.done[st.idx] || pct >= 100;
+    const liveCards = S.map((s, i) => ({
+      story:s, track, liked:!!st.liked[s.id], saved:!!st.saved[s.id],
+      toast: st.toast === s.id ? 'saved to reading list' : '', tip: st.tip === s.id,
+      chev: i === st.idx && timeUp ? 'pulse' : 'none',
+      onLike:() => this.toggleLike(s.id), onSave:() => this.toggleSave(s.id), onShare:() => this.share(s.id), onRead:() => this.setState({sheet:true})
+    }));
+    const n = st.topics.length, ready = n >= 3;
+    const calMs = st.calResult != null ? st.calResult : st.now - st.calStart;
+    const r = (st.calResult || 0) / 1000;
+    return {
+      ...STATIC, liveCards, feedRef:this.feedRef, onFeedScroll:this.onFeedScroll, backToTop:this.backToTop,
+      liveCount:N, liveSecs:N * 9, liveSaved:Object.values(st.saved).filter(Boolean).length,
+      sheetOpen:st.sheet, sheetStory:S[Math.min(st.idx, N - 1)], closeSheet:() => this.setState({sheet:false}),
+      chips: TOPICS.map(t => { const sel = st.topics.includes(t); return {t, sel, unsel:!sel, toggle:() => this.setState(s => ({topics: s.topics.includes(t) ? s.topics.filter(x => x !== t) : [...s.topics, t]}))}; }),
+      countText: n + ' selected', nextColor: ready ? '#0055FF' : '#8E8E93', btnBg: ready ? '#0055FF' : '#F0F0EE', btnFg: ready ? '#FFFFFF' : '#6B6B6B',
+      calW: Math.min(100, calMs / 90) + '%', calDone: st.calResult != null,
+      calText: r < 9 ? r.toFixed(1) + ' seconds. you read ahead of the timer, so swipe whenever you are ready.' : r.toFixed(1) + ' seconds. the nine-second rhythm suits you.',
+      calLabel: st.calResult != null ? 'read it again' : "tap when you're done reading",
+      calNextColor: st.calResult != null ? '#0055FF' : '#8E8E93',
+      calTap: () => { const t = performance.now(); if (this.state.calResult == null) this.setState({calResult: t - this.state.calStart, now:t}); else this.setState({calResult:null, calStart:t, now:t}); }
+    };
+  }
+}
+</script>
+</body>
+</html>
