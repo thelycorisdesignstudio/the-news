@@ -216,7 +216,7 @@ export function Coverage() {
         {COVERAGE.map(c => {
           const on = cov.includes(c.k);
           return (
-            <button key={c.k} role="checkbox" aria-checked={on} onClick={() => toggle(c.k)}
+            <button className={on ? undefined : 'frost'} key={c.k} role="checkbox" aria-checked={on} onClick={() => toggle(c.k)}
               style={{ flex: 'none', height: 64, padding: '0 16px', borderRadius: 12, background: on ? 'var(--signal-tint)' : 'var(--card)', border: `1px solid ${on ? 'var(--signal)' : 'var(--rule)'}`, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left', animation: on ? 'tnBounce 200ms ease-out' : undefined }}>
               <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', background: on ? 'var(--card)' : 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name={COVERAGE_ICON[c.icon]} size={18} color={on ? 'var(--signal)' : 'var(--ink)'} />
@@ -371,8 +371,8 @@ export function Notifications() {
         <p style={{ margin: '8px 0 0', maxWidth: 280, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>we'll send your most important story once daily. nothing else.</p>
       </div>
       <div className="rise" style={{ position: 'absolute', top: T(320), left: 16, right: 16, animationDelay: '200ms' }} aria-hidden>
-        <div style={{ position: 'absolute', left: 14, right: 14, top: 16, height: 80, borderRadius: 12, background: 'var(--card)', boxShadow: '0 0 0 1px var(--rule)', opacity: 0.6 }} />
-        <div style={{ position: 'relative', padding: '12px 14px', borderRadius: 12, background: 'var(--card)', boxShadow: '0 12px 32px rgba(10,10,10,.08), 0 0 0 1px var(--rule)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <div className="frost" style={{ position: 'absolute', left: 14, right: 14, top: 16, height: 80, borderRadius: 12, background: 'var(--card)', boxShadow: '0 0 0 1px var(--rule)', opacity: 0.6 }} />
+        <div className="frost" style={{ position: 'relative', padding: '12px 14px', borderRadius: 12, background: 'var(--card)', boxShadow: '0 12px 32px rgba(10,10,10,.08), 0 0 0 1px var(--rule)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{ flex: 'none', width: 38, height: 38, borderRadius: 9, background: 'var(--surface)', border: '1px solid var(--rule)', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: 5, lineHeight: 1 }}>
             <span style={{ font: 'italic 400 10px/1 var(--font)', color: 'var(--gray)' }}>The</span>
             <span style={{ font: '800 12px/1 var(--font)', letterSpacing: '-.5px' }}>News</span>

@@ -80,7 +80,7 @@ export function Places() {
       <Title sub="neighbourhood stories come from around these.">your places.</Title>
       <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(212), left: 20, right: 20, bottom: 'calc(var(--sb) + 130px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {prefs.places.map(p => (
-          <button key={p.id} className="card row-btn" onClick={() => nav(`/places/${p.id}`)} style={{ flex: 'none', padding: 16, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--card)', border: '1px solid var(--rule)' }}>
+          <button key={p.id} className="card row-btn frost" onClick={() => nav(`/places/${p.id}`)} style={{ flex: 'none', padding: 16, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--card)', border: '1px solid var(--rule)' }}>
             <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={KIND_ICON[p.kind]} size={18} /></span>
             <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ font: '600 15px/1 var(--font)', color: 'var(--ink)' }}>{p.label}</span>

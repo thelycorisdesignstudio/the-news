@@ -28,6 +28,13 @@
   --grad-peach: #E8AE8C;
   --grad-blue: #C9DCE8;
   --grad-blue-deep: #A3C4E2;
+  /* Glass */
+  --glass-tint: rgba(255, 255, 255, .32);
+  --glass-rim-hi: rgba(255, 255, 255, .95);
+  --glass-rim-lo: rgba(255, 255, 255, .18);
+  --glass-shadow: 0 6px 18px rgba(10, 10, 10, .08), 0 1px 2px rgba(10, 10, 10, .06);
+  --frost: rgba(255, 255, 255, .56);
+  --frost-border: rgba(255, 255, 255, .72);
   --page-bg: #E9E9E6;
   /* Safe areas. Inside the desktop phone frame these become the iOS status bar and home indicator. */
   --st: max(env(safe-area-inset-top), 10px);
@@ -62,6 +69,12 @@
   --grad-peach: #5C3B29;
   --grad-blue: #22384A;
   --grad-blue-deep: #1E3D5C;
+  --glass-tint: rgba(40, 40, 40, .34);
+  --glass-rim-hi: rgba(255, 255, 255, .35);
+  --glass-rim-lo: rgba(255, 255, 255, .05);
+  --glass-shadow: 0 6px 18px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .3);
+  --frost: rgba(30, 30, 30, .55);
+  --frost-border: rgba(255, 255, 255, .08);
   --page-bg: #050505;
   color-scheme: dark;
 }
@@ -154,6 +167,76 @@ input { font-family: var(--font); }
 .page { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; scrollbar-width: none; }
 .page::-webkit-scrollbar { display: none; }
 
+/* ---------- motion ---------- */
+@keyframes tnRouteIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes tnRouteOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-6px); } }
+@keyframes tnRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.route-in { animation: tnRouteIn 280ms cubic-bezier(.2, .8, .2, 1) both; }
+.route-out { animation: tnRouteOut 160ms cubic-bezier(.4, 0, 1, 1) both; pointer-events: none; }
+.rise { animation: tnRise 460ms cubic-bezier(.2, .8, .2, 1) both; animation-delay: 60ms; }
+/* Lists enter one item after another, on first render only (see useStagger). */
+.stagger > * { animation: tnRise 460ms cubic-bezier(.2, .8, .2, 1) both; animation-delay: 700ms; }
+.stagger > :nth-child(1) { animation-delay: 92ms; }
+.stagger > :nth-child(2) { animation-delay: 124ms; }
+.stagger > :nth-child(3) { animation-delay: 156ms; }
+.stagger > :nth-child(4) { animation-delay: 188ms; }
+.stagger > :nth-child(5) { animation-delay: 220ms; }
+.stagger > :nth-child(6) { animation-delay: 252ms; }
+.stagger > :nth-child(7) { animation-delay: 284ms; }
+.stagger > :nth-child(8) { animation-delay: 316ms; }
+.stagger > :nth-child(9) { animation-delay: 348ms; }
+.stagger > :nth-child(10) { animation-delay: 380ms; }
+.stagger > :nth-child(11) { animation-delay: 412ms; }
+.stagger > :nth-child(12) { animation-delay: 444ms; }
+.stagger > :nth-child(13) { animation-delay: 476ms; }
+.stagger > :nth-child(14) { animation-delay: 508ms; }
+.stagger > :nth-child(15) { animation-delay: 540ms; }
+.stagger > :nth-child(16) { animation-delay: 572ms; }
+.stagger > :nth-child(17) { animation-delay: 604ms; }
+.stagger > :nth-child(18) { animation-delay: 636ms; }
+.stagger > :nth-child(19) { animation-delay: 668ms; }
+.stagger > :nth-child(20) { animation-delay: 700ms; }
+@media (prefers-reduced-motion: reduce) { .route-in, .route-out, .rise, .stagger > * { animation: none !important; } }
+
+/* ---------- liquid glass ----------
+ * .lg: a control made of glass. Put <GlassBg /> first inside it (see components/Glass.tsx for why these
+ * layers replace an SVG displacement filter). Everything here is GPU-composited.
+ */
+.lg { position: relative; isolation: isolate; box-shadow: var(--glass-shadow); transition: transform 180ms cubic-bezier(.2, .8, .2, 1), box-shadow 180ms; }
+.lg:active:not(:disabled) { transform: scale(.94); }
+.lg__bg { position: absolute; inset: 0; z-index: -1; display: block; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.lg__body, .lg__lens, .lg__tint, .lg__rim { position: absolute; inset: 0; display: block; border-radius: inherit; }
+.lg__body { -webkit-backdrop-filter: blur(7px) saturate(180%) brightness(1.05); backdrop-filter: blur(7px) saturate(180%) brightness(1.05); }
+/* The refracting edge: less blur, more light and colour, masked to a ring. */
+.lg__lens {
+  -webkit-backdrop-filter: blur(1.5px) saturate(240%) brightness(1.16) contrast(1.06); backdrop-filter: blur(1.5px) saturate(240%) brightness(1.16) contrast(1.06);
+  -webkit-mask: radial-gradient(closest-side, transparent 64%, rgba(0, 0, 0, .55) 84%, #000 100%);
+  mask: radial-gradient(closest-side, transparent 64%, rgba(0, 0, 0, .55) 84%, #000 100%);
+}
+.lg__tint { background: var(--glass-tint); transition: background 180ms; }
+.lg__rim {
+  padding: 1px;
+  background: linear-gradient(135deg, var(--glass-rim-hi) 0%, var(--glass-rim-lo) 38%, var(--glass-rim-lo) 62%, var(--glass-rim-hi) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+/* Specular highlight plus a faint chromatic fringe: warm on the top-left, cool on the bottom-right. */
+.lg__bg::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .6), inset 1px 1px 1.5px rgba(255, 150, 120, .14), inset -1px -1px 1.5px rgba(110, 160, 255, .16), inset 0 -1px 2px rgba(10, 10, 10, .05);
+}
+.lg.is-like .lg__tint { background: color-mix(in srgb, var(--alert-tint) 82%, transparent); }
+.lg.is-save .lg__tint { background: color-mix(in srgb, var(--signal-tint) 82%, transparent); }
+@media (hover: hover) { .lg:hover .lg__tint { background: color-mix(in srgb, var(--glass-tint), rgba(255, 255, 255, .5) 25%); } }
+
+/* Frosted glass: cards and chips. Same material without refraction, a little more tint for reading. */
+.frost { background: var(--frost) !important; border-color: var(--frost-border) !important; -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 16px rgba(10, 10, 10, .04); }
+
+@media (prefers-reduced-transparency: reduce) {
+  .lg__body, .lg__lens, .frost, .chip, .chip-sm, .card { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .lg__tint, .frost, .chip, .chip-sm, .card { background: var(--card) !important; }
+}
+
 /* ---------- controls ---------- */
 .btn { width: 100%; height: 52px; border-radius: 50px; border: 0; display: flex; align-items: center; justify-content: center; gap: 10px; font: 600 16px/1 var(--font); cursor: pointer; transition: background 150ms, color 150ms, transform 100ms; flex: none; }
 .btn-primary { background: var(--signal); color: var(--on-signal); }
@@ -179,16 +262,16 @@ input { font-family: var(--font); }
 .field input.is-secret::placeholder { font-weight: 400; letter-spacing: 0; }
 .field-error { display: flex; align-items: flex-start; gap: 6px; font: 400 12px/1.4 var(--font); color: var(--ink); }
 
-.chip { display: flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 50px; background: var(--card); border: .5px solid var(--rule); box-shadow: 0 1px 2px rgba(10, 10, 10, .04); font: 600 14px/1.2 var(--font); color: var(--ink); cursor: pointer; }
+.chip { display: flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: 50px; background: var(--frost); border: .5px solid var(--frost-border); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); box-shadow: 0 1px 2px rgba(10, 10, 10, .04); font: 600 14px/1.2 var(--font); color: var(--ink); cursor: pointer; }
 .chip.is-on { padding: 10px 18px 10px 14px; background: var(--signal-tint); border-color: var(--signal); color: var(--signal); box-shadow: none; animation: tnBounce 200ms ease-out; }
 .chip.is-off-disabled { background: var(--rule); color: var(--gray-2); border-color: transparent; }
-.chip-sm { display: flex; align-items: center; gap: 5px; padding: 9px 14px; border-radius: 50px; background: var(--card); border: .5px solid var(--rule-2); font: 600 13px/1 var(--font); color: var(--ink); cursor: pointer; }
+.chip-sm { display: flex; align-items: center; gap: 5px; padding: 9px 14px; border-radius: 50px; background: var(--frost); border: .5px solid var(--frost-border); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); font: 600 13px/1 var(--font); color: var(--ink); cursor: pointer; }
 .chip-sm.is-on { padding: 9px 14px 9px 10px; background: var(--signal-tint); border-color: var(--signal); color: var(--signal); animation: tnBounce 200ms ease-out; }
 .pill-cat { padding: 5px 10px; border-radius: 50px; background: var(--signal-tint); color: var(--signal); font: 600 11px/1.2 var(--font); letter-spacing: .06em; text-transform: uppercase; }
 
 .shimmer { background: linear-gradient(90deg, var(--shimmer-a) 0%, var(--shimmer-b) 50%, var(--shimmer-a) 100%); background-size: 200% 100%; animation: tnShimmer 1.4s linear infinite; }
 
-.card { border-radius: 12px; background: var(--card); border: 1px solid var(--rule); }
+.card { border-radius: 12px; background: var(--frost); border: 1px solid var(--frost-border); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 16px rgba(10, 10, 10, .04); }
 .row-btn { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; }
 .link-btn { border: 0; background: none; padding: 0; cursor: pointer; font-family: var(--font); }
 

@@ -295,7 +295,7 @@ function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: nu
       </div>
       <div className="no-scrollbar" style={{ position: 'absolute', top: T(156), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {rows.map(({ s, prog }) => (
-          <button key={s.id} onClick={() => onRead(s)} className="card row-btn" style={{ flex: 'none', padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, border: '1px solid var(--rule)', background: 'var(--card)' }}>
+          <button key={s.id} onClick={() => onRead(s)} className="card row-btn frost" style={{ flex: 'none', padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, border: '1px solid var(--rule)', background: 'var(--card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span className="pill-cat" style={{ padding: '4px 8px', fontSize: 10 }}>{s.cat}</span>
               {s.type === 'breaking' && <span style={{ padding: '4px 8px', borderRadius: 50, background: 'var(--alert)', color: '#FFFFFF', font: '700 10px/1.2 var(--font)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Breaking</span>}
