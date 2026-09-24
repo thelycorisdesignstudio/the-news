@@ -221,7 +221,7 @@ export function About() {
         <span style={{ marginTop: 8, font: '400 12px/1 var(--font)', color: 'var(--gray)' }}>version {import.meta.env.VITE_APP_VERSION ?? '1.0.0'} · A Lycoris Product</span>
       </div>
       {confirm && (
-        <Dialog icon="delete" title="delete your account?" body="this removes your account, topics, places, saved stories and history from our servers. it can't be undone.">
+        <Dialog title="delete your account?" body="this removes your account, topics, places, saved stories and history from our servers. it can't be undone." onClose={() => { if (!busy) setConfirm(false); }}>
           <Button loading={busy} onClick={async () => {
             setBusy(true);
             try { await deleteAccount(); nav('/welcome', { replace: true }); } catch { showToast("couldn't delete your account. try again."); setBusy(false); }

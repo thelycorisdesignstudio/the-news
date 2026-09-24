@@ -6,6 +6,9 @@ export function haptic(kind: 'tick' | 'like' | 'save' | 'success' | 'warn') {
   try { navigator.vibrate?.(pattern); } catch { /* not supported */ }
 }
 
+/** Wheel silence that ends a gesture. Trackpad momentum events come every 8–60ms, even on slow devices. */
+const QUIET_MS = 260;
+
 const easeOutQuart = (p: number) => 1 - Math.pow(1 - p, 4);
 
 /**
@@ -58,9 +61,12 @@ export function useSnapPager(ref: RefObject<HTMLDivElement | null>, pages: numbe
       const now = performance.now();
       const gap = now - last;
       last = now;
-      if (locked) {
+      // Momentum keeps arriving for a second or more after a flick, and on a busy main thread it arrives in
+      // clumps. Stay locked until the glide has finished and the wheel has been quiet for a moment.
+      if (locked || el.classList.contains('is-gliding')) {
+        locked = true;
         window.clearTimeout(unlock);
-        unlock = window.setTimeout(() => { locked = false; acc = 0; }, 140);
+        unlock = window.setTimeout(() => { locked = false; acc = 0; }, QUIET_MS);
         return;
       }
       if (gap > 220) acc = 0;
@@ -70,7 +76,7 @@ export function useSnapPager(ref: RefObject<HTMLDivElement | null>, pages: numbe
         acc = 0;
         locked = true;
         window.clearTimeout(unlock);
-        unlock = window.setTimeout(() => { locked = false; }, 460);
+        unlock = window.setTimeout(() => { locked = false; acc = 0; }, 460);
       }
     };
     el.addEventListener('wheel', onWheel, { passive: false });

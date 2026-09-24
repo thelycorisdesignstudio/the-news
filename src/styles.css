@@ -259,6 +259,11 @@ input { font-family: var(--font); }
 .lg-switch.is-on { --lg-tint: color-mix(in srgb, var(--signal) 92%, transparent); }
 .lg-switch:not(.is-on) { --lg-tint: color-mix(in srgb, var(--rule-3) 70%, transparent); }
 .lg-switch > span:last-child { z-index: 1; }
+/* Chips come in dozens: one backdrop pass each (the body), with the refracting edge drawn by the rim and
+ * specular layers instead of a second pass. On a sheet the backdrop is opaque, so no pass is needed at all. */
+.chip.lg .lg__lens, .chip-sm.lg .lg__lens, .lg-card .lg__lens { display: none; }
+[role="dialog"] .lg .lg__body, [role="dialog"] .lg .lg__lens { display: none; }
+[role="dialog"] .lg { --glass-tint: color-mix(in srgb, var(--card) 88%, transparent); }
 /* Tinted glass is dense, so the refracting ring shows as light on the edge rather than colour through it. */
 .btn-primary.lg .lg__lens, .btn-dark.lg .lg__lens, .btn-danger.lg .lg__lens, .lg-signal .lg__lens, .lg-switch.is-on .lg__lens { opacity: .55; }
 
@@ -317,3 +322,39 @@ input { font-family: var(--font); }
   .grad-bg { transform: scale(1.2); }
   .shimmer { animation-duration: 3s; }
 }
+
+/* ---------- pop-ups ----------
+ * Gradient spine (blue into peach, the app's two colours), vertical wordmark, paper panel.
+ */
+.pop-scrim { position: absolute; inset: 0; z-index: 50; background: color-mix(in srgb, var(--surface) 55%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: tnDim 220ms ease-out; }
+.pop {
+  position: absolute; left: 16px; right: 16px; top: 50%; z-index: 51; display: flex; min-height: 320px;
+  background: var(--pop-paper); box-shadow: 0 30px 80px rgba(10, 10, 10, .14), 0 2px 8px rgba(10, 10, 10, .05);
+  transform: translateY(-50%); animation: tnPopIn 280ms cubic-bezier(.2, .8, .2, 1) both;
+}
+@keyframes tnPopIn { from { opacity: 0; transform: translateY(calc(-50% + 14px)) scale(.98); } to { opacity: 1; transform: translateY(-50%); } }
+.pop__spine {
+  flex: none; width: 76px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 18px; padding: 20px 0 18px;
+  background: linear-gradient(162deg, #8DB6D9 0%, #A9BACB 30%, #D2B8A6 62%, #F2BC8A 85%, #FEBC76 100%);
+}
+.pop__mark { writing-mode: vertical-rl; transform: rotate(180deg); font: 800 30px/1 var(--font); letter-spacing: -1px; color: #F8EEE2; white-space: nowrap; }
+.pop__mark i { font-style: italic; font-weight: 400; font-size: 20px; letter-spacing: 0; margin-bottom: 6px; }
+.pop__stamp { width: 44px; height: 44px; border: 1.5px solid #F8EEE2; display: flex; align-items: center; justify-content: center; font: 500 15px/1 var(--font); color: #F8EEE2; }
+.pop__panel { position: relative; flex: 1; min-width: 0; padding: 60px 22px 22px 22px; display: flex; flex-direction: column; }
+.pop__close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: #8A8A87; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 150ms, background 150ms; }
+.pop__close:hover { background: #6F6F6C; }
+.pop__close:active { transform: scale(.92); }
+.pop__title { margin: 0; font: 400 24px/1.25 var(--font); letter-spacing: -0.01em; color: var(--pop-ink); text-wrap: balance; }
+.pop__rule { width: 100%; height: 0; margin: 20px 0 18px; border: 0; border-top: 1px solid var(--pop-ink); }
+.pop__body { margin: 0 0 22px; font: 400 14px/1.45 var(--font); color: var(--pop-ink); text-wrap: pretty; }
+.pop__actions { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+/* Actions are outlined pills, like the reference: no fill, no glass. */
+.pop .btn { height: 48px; background: transparent; border: 1px solid var(--pop-ink); color: var(--pop-ink); font-weight: 400; box-shadow: none; }
+.pop .btn .lg__bg { display: none; }
+.pop .btn:active:not(:disabled) { background: color-mix(in srgb, var(--pop-ink) 8%, transparent); transform: scale(.98); }
+.pop .btn-primary { background: var(--pop-ink); color: var(--pop-paper); }
+.pop .btn-primary:active:not(:disabled) { background: var(--pop-ink); opacity: .88; }
+.pop .btn-danger { border-color: var(--alert); color: var(--alert); }
+.pop .btn-light { border-color: color-mix(in srgb, var(--pop-ink) 35%, transparent); }
+:root { --pop-paper: #FAF8F5; --pop-ink: #4A4A48; }
+:root[data-theme="dark"] { --pop-paper: #1C1C1B; --pop-ink: #E6E3DE; }

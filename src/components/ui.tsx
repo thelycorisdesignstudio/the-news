@@ -300,16 +300,35 @@ export function Sheet({ onClose, top = 84, children, label, scroll = true }: { o
   );
 }
 
-export function Dialog({ icon, title, body, children }: { icon: IconName; title: string; body: string; children: ReactNode }) {
+/**
+ * Pop-ups: a gradient spine with the wordmark set vertically, and a quiet paper panel beside it —
+ * light headline, a hairline rule, outlined pill actions, a round close button.
+ */
+export function Dialog({ title, body, children, onClose }: { icon?: IconName; title: string; body: string; children: ReactNode; onClose?: () => void }) {
+  const titleId = useId();
+  useEffect(() => {
+    if (!onClose) return;
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [onClose]);
   return (
     <>
-      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--scrim)', animation: 'tnDim 220ms ease-out' }} />
-      <div role="alertdialog" aria-modal="true" aria-label={title}
-        style={{ position: 'absolute', left: 24, right: 24, top: '50%', transform: 'translateY(-50%)', zIndex: 51, padding: 24, borderRadius: 20, background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: 8, boxShadow: '0 24px 48px rgba(10,10,10,.2)', animation: 'tnFadeIn 200ms ease-out' }}>
-        <Icon name={icon} size={26} color="var(--ink)" />
-        <h3 style={{ margin: '8px 0 0', font: '700 20px/1.2 var(--font)', letterSpacing: '-0.03em' }}>{title}</h3>
-        <p style={{ margin: '0 0 12px', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>{body}</p>
-        {children}
+      <div className="pop-scrim" onClick={onClose} />
+      <div role="alertdialog" aria-modal="true" aria-labelledby={titleId} className="pop">
+        <div className="pop__spine" aria-hidden>
+          <span className="pop__mark"><i>The</i> News</span>
+          <span className="pop__stamp">9s</span>
+        </div>
+        <div className="pop__panel">
+          {onClose && (
+            <button className="pop__close" aria-label="close" onClick={onClose}><Icon name="cancel" size={18} color="#FFFFFF" /></button>
+          )}
+          <h3 id={titleId} className="pop__title">{title}</h3>
+          <hr className="pop__rule" />
+          <p className="pop__body">{body}</p>
+          <div className="pop__actions">{children}</div>
+        </div>
       </div>
     </>
   );

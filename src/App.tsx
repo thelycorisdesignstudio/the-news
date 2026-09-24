@@ -37,9 +37,9 @@ function SessionExpired() {
   const nav = useNavigate();
   if (!sessionExpired) return null;
   return (
-    <Dialog icon="square-lock" title="you've been signed out." body="for your security, log in again to keep syncing your topics and places.">
+    <Dialog title="you've been signed out." body="for your security, log in again to keep syncing your topics and places." onClose={dismissExpired}>
       <Button onClick={() => { dismissExpired(); nav('/login'); }}>log in</Button>
-      <button className="link-btn" onClick={dismissExpired} style={{ textAlign: 'center', paddingTop: 8, font: '500 14px/1 var(--font)', color: 'var(--gray)' }}>not now</button>
+      <Button variant="light" onClick={dismissExpired}>not now</Button>
     </Dialog>
   );
 }
