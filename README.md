@@ -101,8 +101,26 @@ See `.env.example`. The ones that matter for production:
 | `APPLE_*` | Sign in with Apple (redirect URI: `$APP_ORIGIN/api/auth/oauth/apple/callback`) |
 | `VAPID_PUBLIC_KEY/PRIVATE_KEY` | Daily push notifications (`npx web-push generate-vapid-keys`) |
 | `ADMIN_TOKEN` | Enables the story ingest API |
-| `SEED_DEMO` | `1` re-stamps the bundled demo stories to today on boot; set `0` once real content flows in |
+| `SEED_DEMO` | `1` re-stamps the bundled demo stories to today on boot. Defaults to off while live news is on |
+| `LIVE_NEWS` | Real-time ingestion, on by default; `0` turns it off |
+| `ANTHROPIC_API_KEY` | Claude writes each card (headline, nine-second summary, context, topic, level). Without it, a rule-based extractive writer is used |
+| `NEWS_MODEL` | Model for write-ups, default `claude-opus-5` |
+| `INGEST_MAX_PER_CYCLE` | Most articles written up per one-minute cycle (default 40) |
+| `NEWS_FEEDS` | Extra feeds: `Name\|https://…/feed,https://…` |
+| `READER`, `JINA_API_KEY` | Full-text reading via Jina Reader; `READER=0` disables it |
+| `AGENT_REACH_BIN` | Path to the agent-reach CLI; its `doctor --json` report joins `/api/admin/sources` |
 | `GEOCODER=nominatim` | Falls back to OpenStreetMap search for places outside the built-in gazetteer |
+
+## Live news
+
+`server/ingest/` polls 30 public feeds: Yahoo Finance, CNBC, MarketWatch, TechCrunch, The Verge, Ars Technica, WIRED, MIT Technology Review, VentureBeat, BBC, The Guardian, NYT, Hacker News, security, robotics, quantum and space desks, Google News wire searches for the US, UK, India and Singapore, and city desks for Bengaluru, Mumbai, London and San Francisco. It works the way [agent-reach](https://github.com/Panniantong/agent-reach) does: RSS for discovery, and Jina Reader (`r.jina.ai`) for the full text when a feed only carries a teaser.
+
+- Each feed is polled on its own interval with conditional GET (`ETag`/`Last-Modified`). A failing feed backs off exponentially.
+- The same article from several feeds is written up once. The same story from several outlets folds into one card, which moves up, and becomes breaking when three outlets carry it within three hours.
+- Off-topic items (sport, lifestyle, deals) are skipped. Summaries are held to 45 words and headlines to 90 characters whatever the writer returns.
+- Open apps get new stories over `GET /api/stream` (server-sent events). New stories join the end of the reader's queue, so the card on screen never moves.
+
+`GET /api/admin/sources` shows per-feed health, and `POST /api/admin/ingest` runs a cycle now (both need `ADMIN_TOKEN`).
 
 ## Content
 
