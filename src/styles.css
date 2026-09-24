@@ -27,6 +27,7 @@
   --grad-base: #EBD6C8;
   --grad-peach: #E8AE8C;
   --grad-blue: #C9DCE8;
+  --grad-blue-deep: #A3C4E2;
   --page-bg: #E9E9E6;
   /* Safe areas. Inside the desktop phone frame these become the iOS status bar and home indicator. */
   --st: max(env(safe-area-inset-top), 10px);
@@ -60,6 +61,7 @@
   --grad-base: #2A2624;
   --grad-peach: #5C3B29;
   --grad-blue: #22384A;
+  --grad-blue-deep: #1E3D5C;
   --page-bg: #050505;
   color-scheme: dark;
 }
@@ -121,7 +123,7 @@ input { font-family: var(--font); }
 /*
  * The signature gradient, in two layers:
  * 1. .grad-bg: the design's six-stop gradient, drifting and rotating (tnDrift).
- * 2. .grad-mix: a peach field anchored upper-right and a blue field anchored lower-left, pinned to the
+ * 2. .grad-mix: a peach field anchored upper-right and an equally strong blue field anchored lower-left, pinned to the
  *    screen (not to the drifting layer) and orbiting slowly on different clocks. The blend between them
  *    keeps moving, and both colours are on screen at every moment.
  * Transforms only, so everything stays on the compositor.
@@ -130,13 +132,13 @@ input { font-family: var(--font); }
 .grad-mix { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
 .grad-mix::before, .grad-mix::after { content: ''; position: absolute; border-radius: 50%; will-change: transform; }
 .grad-mix::before {
-  width: 150%; height: 95%; left: 5%; top: -30%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--grad-peach) 78%, transparent) 0%, color-mix(in srgb, var(--grad-peach) 45%, transparent) 42%, color-mix(in srgb, var(--grad-peach) 12%, transparent) 72%, color-mix(in srgb, var(--grad-peach) 0%, transparent) 100%);
+  width: 155%; height: 100%; left: 4%; top: -46%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--grad-peach) 85%, transparent) 0%, color-mix(in srgb, var(--grad-peach) 55%, transparent) 42%, color-mix(in srgb, var(--grad-peach) 16%, transparent) 72%, color-mix(in srgb, var(--grad-peach) 0%, transparent) 100%);
   animation: tnPeach 13s ease-in-out infinite alternate;
 }
 .grad-mix::after {
-  width: 150%; height: 95%; left: -55%; top: 38%;
-  background: radial-gradient(closest-side, var(--grad-blue) 0%, color-mix(in srgb, var(--grad-blue) 72%, transparent) 42%, color-mix(in srgb, var(--grad-blue) 20%, transparent) 72%, color-mix(in srgb, var(--grad-blue) 0%, transparent) 100%);
+  width: 170%; height: 115%; left: -62%; top: 16%;
+  background: radial-gradient(closest-side, var(--grad-blue-deep) 0%, color-mix(in srgb, var(--grad-blue-deep) 70%, var(--grad-blue)) 30%, color-mix(in srgb, var(--grad-blue) 75%, transparent) 50%, color-mix(in srgb, var(--grad-blue) 22%, transparent) 75%, color-mix(in srgb, var(--grad-blue) 0%, transparent) 100%);
   animation: tnBlue 17s ease-in-out infinite alternate;
 }
 .grad-still { background: var(--grad); }
