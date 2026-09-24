@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { EMAIL_RE, isValidPassword, PASSWORD_RULE, passwordStrength } from '../../shared/domain';
 import { Wordmark } from '../components/Brand';
 import { Icon } from '../components/Icon';
-import { BackButton, Banner, Button, FieldError, Footer, T, TextField, Title } from '../components/ui';
+import { BackButton, Banner, Button, FieldError, Footer, T, TextField, Title, useStagger } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import { useStore } from '../lib/store';
 import { Splash } from './Launch';
@@ -16,14 +16,34 @@ const OAUTH_ERRORS: Record<string, string> = {
   email: 'we need a verified email address to create your account.',
 };
 
+/**
+ * Apple / Google sign-in. While auth is in demo mode and a provider isn't configured,
+ * the button signs you in as the demo reader so the whole app is testable in one tap.
+ */
 function useOAuth() {
   const { showToast } = useStore();
-  const [providers, setProviders] = useState<{ google: boolean; apple: boolean } | null>(null);
-  useEffect(() => { api.providers().then(setProviders).catch(() => setProviders({ google: false, apple: false })); }, []);
-  return (p: 'google' | 'apple') => {
-    if (providers && !providers[p]) return showToast(OAUTH_ERRORS[`${p}_unavailable`]);
+  const after = useAfterAuth();
+  const [providers, setProviders] = useState<{ google: boolean; apple: boolean; demo: boolean } | null>(null);
+  useEffect(() => { api.providers().then(setProviders).catch(() => setProviders({ google: false, apple: false, demo: false })); }, []);
+  return async (p: 'google' | 'apple') => {
+    if (providers && !providers[p]) {
+      if (!providers.demo) return showToast(OAUTH_ERRORS[`${p}_unavailable`]);
+      try { await after((await api.demo()).user); } catch { showToast("couldn't sign in. try again."); }
+      return;
+    }
     window.location.href = `/api/auth/oauth/${p}/start`;
   };
+}
+
+/** Small note shown only while auth runs in demo mode. */
+export function DemoNote({ children, action, onAction }: { children: React.ReactNode; action?: string; onAction?: () => void }) {
+  return (
+    <div role="note" style={{ padding: '10px 12px 10px 14px', borderRadius: 12, background: 'var(--signal-tint)', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <Icon name="alert-circle" size={16} color="var(--signal)" />
+      <span style={{ flex: 1, font: '400 12px/1.45 var(--font)', color: 'var(--ink)' }}>{children}</span>
+      {action && <button type="button" className="link-btn" onClick={onAction} style={{ flex: 'none', font: '600 12px/1 var(--font)', color: 'var(--signal)' }}>{action}</button>}
+    </div>
+  );
 }
 
 /** Where to go once someone is signed in. */
@@ -40,6 +60,7 @@ function useAfterAuth() {
 /** C1 · Account welcome. */
 export function Welcome() {
   const nav = useNavigate();
+  const stagger = useStagger();
   const oauth = useOAuth();
   const [params] = useSearchParams();
   const { showToast } = useStore();
@@ -49,9 +70,9 @@ export function Welcome() {
   }, [params, showToast]);
   return (
     <div className="screen">
-      <div style={{ position: 'absolute', top: T(120), left: 24 }}><Wordmark size="md" /></div>
+      <div className="rise" style={{ position: 'absolute', top: T(120), left: 24 }}><Wordmark size="md" /></div>
       <Title top={196} sub="sign in to keep your topics, places and saved stories in sync.">your feed, on every device.</Title>
-      <Footer bottom={40}>
+      <Footer bottom={40} className={stagger}>
         <Button variant="dark" icon="apple" onClick={() => oauth('apple')}>Continue with Apple</Button>
         <Button variant="light" icon="google" onClick={() => oauth('google')}>Continue with Google</Button>
         <Button icon="mail" onClick={() => nav('/signup')}>Continue with email</Button>
@@ -95,6 +116,7 @@ export function SignUp() {
     password: !isValidPassword(f.password) ? PASSWORD_RULE : null,
   };
   const valid = !errs.name && !errs.email && !errs.password && f.terms;
+  const stagger = useStagger();
   const show = (k: keyof typeof errs) => server[k] || (touched[k] ? errs[k] : null);
   const set = (k: keyof typeof f, v: string | boolean) => { setF(s => ({ ...s, [k]: v })); setServer(s => ({ ...s, [k]: '' })); };
 
@@ -105,7 +127,7 @@ export function SignUp() {
     setBanner(null);
     try {
       const r = await api.signup({ name: f.name.trim(), email: f.email.trim(), password: f.password, terms: true });
-      nav('/verify', { state: { email: r.email, resendIn: r.resendIn } });
+      nav('/verify', { state: { email: r.email, resendIn: r.resendIn, devCode: r.devCode } });
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fields).length) setServer(err.fields);
       else setBanner(err instanceof ApiError ? err.message : 'something went wrong. try again.');
@@ -118,7 +140,7 @@ export function SignUp() {
     <form className="screen" onSubmit={submit} noValidate>
       <BackButton to="/welcome" />
       <Title>create your account.</Title>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(168), left: 20, right: 20, bottom: 'calc(var(--sb) + 110px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 8 }}>
+      <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(168), left: 20, right: 20, bottom: 'calc(var(--sb) + 110px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 8 }}>
         {banner && <Banner>{banner}</Banner>}
         <TextField label="Name" autoComplete="name" value={f.name} disabled={busy} onChange={e => set('name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, name: true }))} error={show('name')} />
         <TextField label="Email" icon="mail" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" value={f.email} disabled={busy}
@@ -149,7 +171,7 @@ export function SignUp() {
 /** C8 · Verify email. Six boxes backed by one input, so paste and SMS autofill both work. */
 export function Verify() {
   const nav = useNavigate();
-  const loc = useLocation() as { state?: { email?: string; resendIn?: number } };
+  const loc = useLocation() as { state?: { email?: string; resendIn?: number; devCode?: string } };
   const [params] = useSearchParams();
   const email = loc.state?.email ?? params.get('email') ?? '';
   const [code, setCode] = useState('');
@@ -157,6 +179,7 @@ export function Verify() {
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(loc.state?.resendIn ?? 30);
   const [focused, setFocused] = useState(true);
+  const [devCode, setDevCode] = useState(loc.state?.devCode);
   const input = useRef<HTMLInputElement>(null);
   const after = useAfterAuth();
   const { showToast } = useStore();
@@ -189,6 +212,7 @@ export function Verify() {
       const r = await api.resend(email);
       setWait(r.resendIn);
       setError(null);
+      if (r.devCode) setDevCode(r.devCode);
       showToast('new code sent.');
     } catch (e) {
       if (e instanceof ApiError && typeof e.body.resendIn === 'number') setWait(e.body.resendIn);
@@ -199,11 +223,11 @@ export function Verify() {
   return (
     <div className="screen">
       <BackButton />
-      <div style={{ position: 'absolute', top: T(116), left: 24, width: 56, height: 56, borderRadius: '50%', background: 'var(--signal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="rise" style={{ position: 'absolute', top: T(116), left: 24, width: 56, height: 56, borderRadius: '50%', background: 'var(--signal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Icon name="mail-open" size={26} color="var(--signal)" />
       </div>
       <Title top={196} sub={`we sent a 6-digit code to ${email}.`}>check your inbox.</Title>
-      <div style={{ position: 'absolute', top: T(310), left: 20, right: 20 }} onClick={() => input.current?.focus()}>
+      <div className="rise" style={{ position: 'absolute', top: T(310), left: 20, right: 20, animationDelay: '140ms' }} onClick={() => input.current?.focus()}>
         <input ref={input} value={code} autoFocus inputMode="numeric" autoComplete="one-time-code" aria-label="6-digit code" maxLength={6} disabled={busy}
           onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
           onChange={e => {
@@ -224,8 +248,13 @@ export function Verify() {
           })}
         </div>
         {error && <div style={{ marginTop: 12 }}><FieldError>{error}</FieldError></div>}
+        {devCode && !busy && (
+          <div style={{ marginTop: 16 }} onClick={e => e.stopPropagation()}>
+            <DemoNote action="fill it in" onAction={() => { setCode(devCode); void verify(devCode); }}>demo mode · your code is <b>{devCode}</b></DemoNote>
+          </div>
+        )}
       </div>
-      <div style={{ position: 'absolute', top: error ? T(430) : T(394), left: 24 }}>
+      <div style={{ position: 'absolute', top: T(394 + (error ? 36 : 0) + (devCode ? 60 : 0)), left: 24 }}>
         {wait > 0
           ? <span style={{ font: '400 13px/1 var(--font)', color: 'var(--gray)' }}>resend code in 0:{String(wait).padStart(2, '0')}</span>
           : <button className="link-btn" onClick={resend} style={{ font: '600 13px/1 var(--font)', color: 'var(--ink)' }}>resend code</button>}
@@ -248,6 +277,7 @@ export function LogIn() {
   const [banner, setBanner] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState(false);
+  const stagger = useStagger();
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -264,7 +294,7 @@ export function LogIn() {
       await after(r.user);
     } catch (err) {
       if (!(err instanceof ApiError)) { setBanner('something went wrong. try again.'); return; }
-      if (err.code === 'needs_verification') return nav('/verify', { state: { email: err.body.email, resendIn: err.body.resendIn } });
+      if (err.code === 'needs_verification') return nav('/verify', { state: { email: err.body.email, resendIn: err.body.resendIn, devCode: err.body.devCode } });
       setLocked(err.code === 'locked');
       setBanner(err.offline ? "you're offline. check your connection and try again." : err.message);
       setFields(err.fields);
@@ -277,7 +307,7 @@ export function LogIn() {
     <form className="screen" onSubmit={submit} noValidate>
       <BackButton to="/welcome" />
       <Title>welcome back.</Title>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(168), left: 20, right: 20, bottom: 0, paddingBottom: 'calc(var(--sb) + 16px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(168), left: 20, right: 20, bottom: 0, paddingBottom: 'calc(var(--sb) + 16px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {banner && <Banner>{banner}</Banner>}
         <TextField label="Email" icon="mail" type="email" inputMode="email" autoComplete="username" autoCapitalize="none" value={email} disabled={busy}
           onChange={e => { setEmail(e.target.value); setFields(f => ({ ...f, email: '' })); }} error={fields.email || null} />
@@ -310,6 +340,7 @@ export function Forgot() {
   const [email, setEmail] = useState(loc.state?.email ?? '');
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
+  const [devLink, setDevLink] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
 
   async function submit(e: FormEvent) {
@@ -317,7 +348,8 @@ export function Forgot() {
     if (!EMAIL_RE.test(email.trim())) return setError('enter a full email address, like name@example.com.');
     setBusy(true);
     try {
-      await api.forgot(email.trim());
+      const r = await api.forgot(email.trim());
+      setDevLink(r.devLink);
       setSent(true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'something went wrong. try again.');
@@ -334,6 +366,11 @@ export function Forgot() {
           <Icon name="mail-open" size={26} color="var(--signal)" />
         </div>
         <Title top={196} sub={`if there's an account for ${email.trim()}, a reset link is on its way. it expires in 30 minutes.`}>check your inbox.</Title>
+        {devLink && (
+          <div style={{ position: 'absolute', top: T(300), left: 20, right: 20 }}>
+            <DemoNote action="open link" onAction={() => nav(devLink)}>demo mode · no email is sent. open the reset link here.</DemoNote>
+          </div>
+        )}
         <Footer>
           <Button onClick={() => nav('/login')}>back to log in</Button>
         </Footer>

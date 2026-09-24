@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { RADII, countryName, type Place } from '../../shared/domain';
 import { Icon, type IconName } from '../components/Icon';
-import { BackButton, Button, Footer, Segmented, Switch, T, Title } from '../components/ui';
+import { BackButton, Button, Footer, Segmented, Switch, T, Title, useStagger } from '../components/ui';
 import { api } from '../lib/api';
 import { currentPosition } from '../lib/device';
 import { useStore } from '../lib/store';
@@ -73,11 +73,12 @@ const KIND_ICON: Record<Place['kind'], IconName> = { home: 'home', work: 'buildi
 export function Places() {
   const nav = useNavigate();
   const { prefs, updatePrefs } = useStore();
+  const stagger = useStagger();
   return (
     <div className="screen">
       <BackButton />
       <Title sub="neighbourhood stories come from around these.">your places.</Title>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(212), left: 20, right: 20, bottom: 'calc(var(--sb) + 130px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(212), left: 20, right: 20, bottom: 'calc(var(--sb) + 130px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {prefs.places.map(p => (
           <button key={p.id} className="card row-btn" onClick={() => nav(`/places/${p.id}`)} style={{ flex: 'none', padding: 16, display: 'flex', alignItems: 'center', gap: 12, background: 'var(--card)', border: '1px solid var(--rule)' }}>
             <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={KIND_ICON[p.kind]} size={18} /></span>

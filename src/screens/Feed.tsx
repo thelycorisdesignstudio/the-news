@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ALL_TOPICS, COVERAGE, RADII, STORY_SECONDS, STORY_TYPES, countryName, filtersFromPrefs, locationTag, timeAgo, type Filters, type Story } from '../../shared/domain';
+import { RADII, STORY_SECONDS, filtersFromPrefs, locationTag, timeAgo, type Filters, type Story } from '../../shared/domain';
 import { Chevron, FeedCard, FeedNav, FeedSkeleton, FeedStateCard, ProgressTrack, type NavHandlers, type View } from '../components/FeedCard';
 import { Icon } from '../components/Icon';
 import { Wordmark } from '../components/Brand';
 import { Button, EditorialMark, Footer, Sheet, Shimmer, StateMessage, T } from '../components/ui';
 import { api, ApiError } from '../lib/api';
 import { shareStory } from '../lib/device';
+import { haptic, useDoubleTap, useSnapPager } from '../lib/pager';
 import { useFeed } from '../lib/feed';
+import { filterGroups, showLabel, toggleFilter, uniq } from '../lib/filters';
 import { useStore } from '../lib/store';
 import { Stat } from './Launch';
 
@@ -136,33 +138,56 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // One gesture, one story: stories plus the caught-up card are the pages.
+  const { page, animateTo } = useSnapPager(ref, stories.length + 1);
   const onScroll = () => {
     const el = ref.current;
     if (!el) return;
     goTo(Math.round(el.scrollTop / el.clientHeight));
   };
-  const scrollToIdx = (i: number) => ref.current?.scrollTo({ top: i * ref.current.clientHeight, behavior: 'smooth' });
+  const scrollToIdx = (i: number) => animateTo(i);
+
+  // A light tick each time a new story settles, like the feed apps people already know.
+  const prevIdx = useRef(idx);
+  useEffect(() => {
+    if (prevIdx.current !== idx) haptic(idx >= stories.length ? 'success' : 'tick');
+    prevIdx.current = idx;
+  }, [idx, stories.length]);
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest('input, [role="dialog"]')) return;
-      if (e.key === 'ArrowDown' || e.key === 'j' || e.key === 'PageDown') { e.preventDefault(); scrollToIdx(Math.min(idx + 1, stories.length)); }
-      if (e.key === 'ArrowUp' || e.key === 'k' || e.key === 'PageUp') { e.preventDefault(); scrollToIdx(Math.max(idx - 1, 0)); }
+      if (e.key === 'ArrowDown' || e.key === 'j' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); page(1); }
+      if (e.key === 'ArrowUp' || e.key === 'k' || e.key === 'PageUp') { e.preventDefault(); page(-1); }
     };
     window.addEventListener('keydown', k);
     return () => window.removeEventListener('keydown', k);
-  }, [idx, stories.length]);
+  }, [page]);
 
   const like = (s: Story) => {
     const on = !isLiked(s.id);
     toggleLike(s);
+    haptic(on ? 'like' : 'tick');
     if (on) { setBurstFor(s.id); later(() => setBurstFor(b => (b === s.id ? null : b)), 400); }
   };
   const save = (s: Story) => {
     const on = toggleSave(s);
+    haptic(on ? 'save' : 'tick');
     setToastFor(on ? s.id : null);
     if (on) later(() => setToastFor(t => (t === s.id ? null : t)), 1800);
   };
+
+  // Double-tap anywhere on a story to like it; the heart pops where you tapped.
+  const [hearts, setHearts] = useState<{ id: number; x: number; y: number }[]>([]);
+  const doubleTap = useDoubleTap((x, y) => {
+    const s = stories[idx];
+    if (!s || s.removed) return;
+    if (!isLiked(s.id)) like(s);
+    else haptic('like');
+    const id = Date.now();
+    setHearts(h => [...h, { id, x, y }]);
+    later(() => setHearts(h => h.filter(v => v.id !== id)), 900);
+  });
   const share = async (s: Story) => {
     const r = await shareStory(s);
     if (r === 'copied') { setTipFor(s.id); later(() => setTipFor(t => (t === s.id ? null : t)), 1400); }
@@ -199,8 +224,8 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
           <span style={{ font: '500 13px/1 var(--font)', color: 'var(--gray)' }}>{refreshing ? 'checking for new stories' : pull > 56 ? 'release to refresh' : 'pull to refresh'}</span>
         </div>
       )}
-      <div ref={ref} onScroll={onScroll} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} className="no-scrollbar" aria-label="today's stories"
-        style={{ position: 'absolute', inset: 0, overflowY: 'scroll', scrollSnapType: 'y mandatory', overscrollBehavior: 'contain', transform: pull ? `translateY(${pull}px)` : undefined, transition: pullStart.current == null ? 'transform 200ms' : 'none', borderRadius: pull ? '20px 20px 0 0' : undefined, boxShadow: pull ? '0 -1px 0 var(--rule)' : undefined }}>
+      <div ref={ref} onScroll={onScroll} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} {...doubleTap} className="no-scrollbar pager" aria-label="today's stories"
+        style={{ position: 'absolute', inset: 0, transform: pull ? `translateY(${pull}px)` : undefined, transition: pullStart.current == null ? 'transform 200ms' : 'none', borderRadius: pull ? '20px 20px 0 0' : undefined, boxShadow: pull ? '0 -1px 0 var(--rule)' : undefined }}>
         {stories.map((s, i) => (
           <div key={s.id} style={{ position: 'relative', height: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always' }} aria-hidden={i !== idx || undefined}>
             {Math.abs(i - idx) <= 2 && (s.removed ? (
@@ -221,6 +246,11 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
           <CaughtUp segments={stories.length} count={stories.filter(s => !s.removed).length} saved={savedHere} onTop={() => scrollToIdx(0)} />
         </div>
       </div>
+      {hearts.map(h => (
+        <div key={h.id} aria-hidden style={{ position: 'absolute', left: h.x - 48, top: h.y - 48, width: 96, height: 96, borderRadius: '50%', background: 'color-mix(in srgb, var(--alert-tint) 92%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 8, animation: 'tnHeartPop 850ms cubic-bezier(.2,.8,.2,1) forwards', boxShadow: '0 12px 32px rgba(255,59,59,.18)' }}>
+          <Icon name="favourite" size={52} color="var(--alert)" />
+        </div>
+      ))}
     </>
   );
 }
@@ -362,7 +392,6 @@ export function ReaderSheet({ story, onClose }: { story: Story; onClose: () => v
 
 /* ---------------- filters ---------------- */
 
-const uniq = (a: string[]) => [...new Set(a.filter(Boolean))];
 
 /** F1 · Filter sheet. Multi-select everything; empty groups mean "any". */
 function FilterSheet({ onClose }: { onClose: () => void }) {
@@ -378,15 +407,8 @@ function FilterSheet({ onClose }: { onClose: () => void }) {
     return () => { alive = false; window.clearTimeout(t); };
   }, [f, prefs.places]);
 
-  const groups: { k: keyof Filters; t: string; items: string[]; add?: string }[] = [
-    { k: 'cov', t: 'Coverage', items: COVERAGE.map(c => c.filter) },
-    { k: 'cty', t: 'Countries', items: uniq([...prefs.countries.map(countryName), ...f.cty]), add: '/countries/add' },
-    { k: 'plc', t: 'Cities & areas', items: uniq([...prefs.places.flatMap(p => [p.city, p.area]), ...f.plc]), add: '/places/add' },
-    { k: 'top', t: 'Topics', items: uniq([...prefs.topics, ...f.top, ...ALL_TOPICS]) },
-    { k: 'typ', t: 'Story type', items: STORY_TYPES.map(t => t.t) },
-  ];
-  const toggle = (k: keyof Filters, v: string) =>
-    updatePrefs(p => ({ filters: { ...p.filters, [k]: p.filters[k].includes(v) ? p.filters[k].filter(x => x !== v) : [...p.filters[k], v] } }));
+  const groups = filterGroups(prefs);
+  const toggle = (k: keyof Filters, v: string) => updatePrefs(toggleFilter(k, v));
 
   return (
     <Sheet onClose={onClose} top={64} label="filters" scroll={false}>
@@ -420,7 +442,7 @@ function FilterSheet({ onClose }: { onClose: () => void }) {
         ))}
       </div>
       <div style={{ padding: '12px 20px', paddingBottom: 'calc(var(--sb) + 6px)', borderTop: '.5px solid var(--rule)', background: 'var(--surface)', flex: 'none' }}>
-        <Button onClick={onClose} disabled={count === 0}>{count == null ? 'show stories' : count === 0 ? 'no stories match' : `show ${count} ${count === 1 ? 'story' : 'stories'}`}</Button>
+        <Button onClick={onClose} disabled={count === 0}>{showLabel(count)}</Button>
       </div>
     </Sheet>
   );

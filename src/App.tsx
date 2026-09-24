@@ -1,5 +1,5 @@
-import { useEffect, type ReactNode } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, type Location } from 'react-router-dom';
 import { Button, Device, Dialog, GlobalToast } from './components/ui';
 import { api } from './lib/api';
 import { currentPosition } from './lib/device';
@@ -62,6 +62,36 @@ function useFollowTravel() {
   }, [booting, prefs.followTravel]);
 }
 
+const feedish = (p: string) => p === '/' || p === '/filters';
+
+/**
+ * Screen-to-screen transitions: the old screen fades out (160ms) and the new one rises in (280ms)
+ * over the living gradient. The feed and its filter sheet share a screen, so they don't fade.
+ */
+function RouteFade({ children }: { children: (location: Location) => ReactNode }) {
+  const location = useLocation();
+  const [shown, setShown] = useState(location);
+  const [phase, setPhase] = useState<'in' | 'out'>('in');
+  useEffect(() => {
+    if (location.pathname === shown.pathname || (feedish(location.pathname) && feedish(shown.pathname))
+      || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(location);
+      setPhase('in');
+      return;
+    }
+    setPhase('out');
+    const t = window.setTimeout(() => { setShown(location); setPhase('in'); }, 160);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
+  const key = feedish(shown.pathname) ? '/' : shown.pathname;
+  return (
+    <div key={key} className={phase === 'out' ? 'route-out' : 'route-in'} style={{ position: 'absolute', inset: 0 }}>
+      {children(shown)}
+    </div>
+  );
+}
+
 function Shell() {
   const { booting } = useStore();
   useFollowTravel();
@@ -70,7 +100,8 @@ function Shell() {
   const u = (el: ReactNode) => <RequireUser>{el}</RequireUser>;
   return (
     <>
-      <Routes>
+      <RouteFade>{location => (
+      <Routes location={location}>
         <Route path="/" element={<Home />} />
         <Route path="/filters" element={o(<Feed filtersOpen />)} />
         <Route path="/landing" element={<Landing />} />
@@ -105,6 +136,7 @@ function Shell() {
         <Route path="/brand" element={<BrandPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      )}</RouteFade>
       <SessionExpired />
     </>
   );

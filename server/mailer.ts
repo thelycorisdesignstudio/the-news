@@ -17,7 +17,7 @@ export function createMailer(): Mailer {
   };
 }
 
-const wrap = (body: string) => `<!doctype html><html><body style="margin:0;background:#FAFAF8;font-family:Epilogue,Helvetica,Arial,sans-serif;color:#0A0A0A">
+const wrap = (body: string) => `<!doctype html><html><body style="margin:0;background:#FAFAF8;font-family:'Rethink Sans',Helvetica,Arial,sans-serif;color:#0A0A0A">
 <div style="max-width:440px;margin:0 auto;padding:40px 24px">
 <div style="line-height:1"><div style="font-style:italic;font-size:14px;color:#6B6B6B">The</div><div style="font-weight:800;font-size:24px;letter-spacing:-1px">News</div></div>
 ${body}

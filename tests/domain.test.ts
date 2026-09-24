@@ -57,3 +57,9 @@ describe('domain', () => {
     expect(passwordStrength('Longpass123!')).toBe(4);
   });
 });
+
+describe('theme', () => {
+  it('defaults to the light theme for every reader', () => {
+    expect(defaultPrefs().theme).toBe('light');
+  });
+});

@@ -29,6 +29,7 @@ export function Device({ children }: { children: ReactNode }) {
         <div className="device-bezel" style={framed ? { transform: `scale(${scale})`, margin: `${(864 * (scale - 1)) / 2}px 0` } : { display: 'contents' }}>
           <div className="device-screen">
             <div className="grad-bg" />
+            <div className="grad-mix" aria-hidden />
             {children}
             {framed && <StatusChrome />}
           </div>
@@ -101,7 +102,7 @@ export function StepHeader({ step, total = 5, onSkip, onNext, nextEnabled = true
 
 export function Title({ children, sub, top = 108, style }: { children: ReactNode; sub?: ReactNode; top?: number; style?: CSSProperties }) {
   return (
-    <div style={{ position: 'absolute', top: T(top), left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 8, ...style }}>
+    <div className="rise" style={{ position: 'absolute', top: T(top), left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 8, ...style }}>
       <h2 style={{ margin: 0, font: '700 28px/1.15 var(--font)', letterSpacing: '-0.03em', color: 'var(--ink)' }}>{children}</h2>
       {sub && <p style={{ margin: 0, font: '400 14px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>{sub}</p>}
     </div>
@@ -109,9 +110,9 @@ export function Title({ children, sub, top = 108, style }: { children: ReactNode
 }
 
 /** Bottom action area, pinned above the home indicator. */
-export function Footer({ children, bottom = 44, gap = 12, style }: { children: ReactNode; bottom?: number; gap?: number; style?: CSSProperties }) {
+export function Footer({ children, bottom = 44, gap = 12, style, className }: { children: ReactNode; bottom?: number; gap?: number; style?: CSSProperties; className?: string }) {
   return (
-    <div style={{ position: 'absolute', left: 20, right: 20, bottom: B(bottom), display: 'flex', flexDirection: 'column', gap, alignItems: 'stretch', zIndex: 3, ...style }}>
+    <div className={className} style={{ position: 'absolute', left: 20, right: 20, bottom: B(bottom), display: 'flex', flexDirection: 'column', gap, alignItems: 'stretch', zIndex: 3, ...style }}>
       {children}
     </div>
   );
@@ -307,4 +308,17 @@ export function Dialog({ icon, title, body, children }: { icon: IconName; title:
       </div>
     </>
   );
+}
+
+/**
+ * Returns "stagger" while a screen first appears, then "" so later state changes (a chip bounce,
+ * a selection) don't replay the entrance.
+ */
+export function useStagger(ms = 1300) {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const t = window.setTimeout(() => setOn(false), ms);
+    return () => window.clearTimeout(t);
+  }, [ms]);
+  return on ? 'stagger' : '';
 }

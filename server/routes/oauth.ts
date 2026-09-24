@@ -38,7 +38,7 @@ export function oauthRoutes(db: DB) {
   const r = Router();
 
   r.get('/providers', (_req, res) => {
-    res.json({ google: enabled('google'), apple: enabled('apple') });
+    res.json({ google: enabled('google'), apple: enabled('apple'), demo: config.demoAuth });
   });
 
   r.get('/oauth/:provider/start', (req, res) => {

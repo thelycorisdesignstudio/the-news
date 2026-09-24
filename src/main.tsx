@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource-variable/epilogue/wght.css';
-import '@fontsource-variable/epilogue/wght-italic.css';
+import '@fontsource-variable/rethink-sans/wght.css';
+import '@fontsource-variable/rethink-sans/wght-italic.css';
 import './styles.css';
 import App from './App';
 

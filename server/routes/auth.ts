@@ -38,14 +38,17 @@ export function authRoutes(db: DB, mail: Mailer) {
     next();
   });
 
-  async function sendCode(addr: string) {
+  /** In demo mode the code travels back in the response so testing needs no inbox. */
+  async function sendCode(addr: string): Promise<string> {
     const code = sixDigitCode();
     const now = Date.now();
     db.prepare(`INSERT INTO email_codes (email, code_hash, expires_at, sent_at, attempts) VALUES (?, ?, ?, ?, 0)
       ON CONFLICT(email) DO UPDATE SET code_hash = excluded.code_hash, expires_at = excluded.expires_at, sent_at = excluded.sent_at, attempts = 0`)
       .run(addr, sha256(code), now + CODE_TTL_MS, now);
     await mail({ to: addr, ...verificationEmail(code) });
+    return code;
   }
+  const dev = (extra: Record<string, unknown>) => (config.demoAuth ? extra : {});
 
   r.post('/signup', async (req, res) => {
     const body = parse(z.object({
@@ -65,8 +68,8 @@ export function authRoutes(db: DB, mail: Mailer) {
       db.prepare('INSERT INTO users (id, name, email, password_hash, verified, created_at) VALUES (?, ?, ?, ?, 0, ?)')
         .run(newId(), body.name, body.email, hash, new Date().toISOString());
     }
-    await sendCode(body.email);
-    res.status(201).json({ pending: true, email: body.email, resendIn: RESEND_COOLDOWN_S });
+    const code = await sendCode(body.email);
+    res.status(201).json({ pending: true, email: body.email, resendIn: RESEND_COOLDOWN_S, ...dev({ devCode: code }) });
   });
 
   r.post('/verify', (req, res) => {
@@ -95,8 +98,8 @@ export function authRoutes(db: DB, mail: Mailer) {
       throw new HttpError(429, 'wait a moment before sending another code.', { resendIn: Math.ceil(RESEND_COOLDOWN_S - since) });
     }
     const user = findUserByEmail(db, body.email);
-    if (user && !user.verified) await sendCode(body.email);
-    res.json({ ok: true, resendIn: RESEND_COOLDOWN_S });
+    const code = user && !user.verified ? await sendCode(body.email) : undefined;
+    res.json({ ok: true, resendIn: RESEND_COOLDOWN_S, ...dev(code ? { devCode: code } : {}) });
   });
 
   r.post('/login', async (req, res) => {
@@ -130,8 +133,8 @@ export function authRoutes(db: DB, mail: Mailer) {
     }
     db.prepare('DELETE FROM login_attempts WHERE email = ?').run(body.email);
     if (!user.verified) {
-      await sendCode(user.email);
-      throw new HttpError(403, 'confirm your email to finish signing in.', { code: 'needs_verification', email: user.email, resendIn: RESEND_COOLDOWN_S });
+      const code = await sendCode(user.email);
+      throw new HttpError(403, 'confirm your email to finish signing in.', { code: 'needs_verification', email: user.email, resendIn: RESEND_COOLDOWN_S, ...dev({ devCode: code }) });
     }
     createSession(db, res, user.id);
     res.json({ user: toUser(user) });
@@ -140,13 +143,15 @@ export function authRoutes(db: DB, mail: Mailer) {
   r.post('/forgot', async (req, res) => {
     const body = parse(z.object({ email }), req.body);
     const user = findUserByEmail(db, body.email);
+    let link: string | undefined;
     if (user) {
       const token = newToken();
       db.prepare('INSERT INTO reset_tokens (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(sha256(token), user.id, Date.now() + RESET_TTL_MS);
-      await mail({ to: user.email, ...resetEmail(`${config.appOrigin}/reset-password?token=${token}`) });
+      link = `/reset-password?token=${token}`;
+      await mail({ to: user.email, ...resetEmail(`${config.appOrigin}${link}`) });
     }
-    // Same answer either way so the endpoint can't be used to discover accounts.
-    res.json({ ok: true });
+    // Same answer either way so the endpoint can't be used to discover accounts (demo mode aside).
+    res.json({ ok: true, ...dev(link ? { devLink: link } : {}) });
   });
 
   r.post('/reset', async (req, res) => {
@@ -168,6 +173,19 @@ export function authRoutes(db: DB, mail: Mailer) {
     })();
     createSession(db, res, user.id);
     res.json({ user: toUser({ ...user, verified: 1 }) });
+  });
+
+  /** Demo mode only: one tap signs in as a ready-made reader (stands in for Apple/Google while testing). */
+  r.post('/demo', (_req, res) => {
+    if (!config.demoAuth) throw new HttpError(404, 'not found.');
+    const email = 'demo@thenews.app';
+    let user = findUserByEmail(db, email);
+    if (!user) {
+      db.prepare('INSERT INTO users (id, name, email, verified, created_at) VALUES (?, ?, ?, 1, ?)').run(newId(), 'Demo Reader', email, new Date().toISOString());
+      user = findUserByEmail(db, email)!;
+    }
+    createSession(db, res, user.id);
+    res.json({ user: toUser(user) });
   });
 
   r.post('/logout', (req, res) => {

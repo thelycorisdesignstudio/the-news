@@ -19,6 +19,11 @@ export const config = {
   databasePath: env.DATABASE_PATH || './data/the-news.db',
   seedDemo: env.SEED_DEMO ? env.SEED_DEMO === '1' : true,
   adminToken: env.ADMIN_TOKEN || '',
+  /**
+   * Dummy auth for testing: verification codes and reset links come back in API responses, and
+   * Apple/Google (when not configured) sign you in as a demo reader. Set DEMO_AUTH=0 in production.
+   */
+  demoAuth: env.DEMO_AUTH !== '0',
   smtpUrl: env.SMTP_URL || '',
   mailFrom: env.MAIL_FROM || 'The News <hello@thenews.app>',
   google: { clientId: env.GOOGLE_CLIENT_ID || '', clientSecret: env.GOOGLE_CLIENT_SECRET || '' },

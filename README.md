@@ -14,6 +14,13 @@ npm run dev                 # API on :8787, app on http://localhost:5173
 
 Sign-up codes and password-reset links are printed in the API log until `SMTP_URL` is set.
 
+**Auth is in demo mode by default** (`DEMO_AUTH`, on unless set to `0`), so testing needs no inbox or OAuth setup:
+- the verify screen shows your 6-digit code with a one-tap "fill it in";
+- forgot-password offers the reset link right on screen;
+- "Continue with Apple / Google" signs you straight in as a ready-made demo reader.
+
+Set `DEMO_AUTH=0` before launch; everything else (hashing, sessions, lockout) is already the production path.
+
 Production:
 
 ```bash
@@ -32,11 +39,11 @@ If Playwright can't download browsers in your environment, point it at an existi
 
 ## What's in the app
 
-Every screen in the v2 design is built and wired to real data:
+Every screen in the v2 design is built and wired to real data (see all of them in the screen gallery):
 
 | Design | Where |
 | --- | --- |
-| Logo system, signature gradient | `src/components/Brand.tsx`, `.grad-bg` in `src/styles.css`, app icons in `public/`, `/brand` page |
+| Logo (wordmark + Nine symbol), signature gradient | `src/components/Brand.tsx`, `.grad-bg` in `src/styles.css`, app icons in `public/`, `/brand` page |
 | Live swipe feed, 07–13 card states | `src/screens/Feed.tsx`, `src/components/FeedCard.tsx` |
 | C1–C8 account screens | `src/screens/Account.tsx` (+ reset-password and OAuth return) |
 | 01–06, 04b, 04c onboarding | `src/screens/Launch.tsx`, `src/screens/Onboarding.tsx` |
@@ -45,7 +52,18 @@ Every screen in the v2 design is built and wired to real data:
 | E1–E8 error and empty states | `Feed.tsx` (offline, didn't load, removed, nothing nearby), `LocationOff`, search no-results, `SessionExpired` in `App.tsx` |
 | 14–17 list, reader, profile, saved | `Feed.tsx`, `src/screens/Profile.tsx` |
 
-Brand rules from the design are kept: Epilogue Variable only (self-hosted via `@fontsource-variable/epilogue`), Hugeicons free stroke icons only (`@hugeicons/react`), Ink & Signal colours, and the drifting gradient behind every screen. On phones the app runs full-bleed and respects safe areas; on wider screens it renders inside the 390 × 844 device from the mockups.
+Brand rules from the design are kept: Rethink Sans only (self-hosted via `@fontsource-variable/rethink-sans`), Hugeicons free stroke icons only (`@hugeicons/react`), Ink & Signal colours, and the drifting gradient behind every screen. On phones the app runs full-bleed and respects safe areas; on wider screens it renders inside the 390 × 844 device from the mockups.
+
+## Look and feel
+
+- **Font:** Rethink Sans everywhere (self-hosted variable font, including the italic "The" of the wordmark).
+- **Icons:** Hugeicons free stroke set only.
+- **Logo:** one system: The News wordmark plus the "Nine" symbol (app icon, favicon).
+- **Gradient:** the design's six-stop signature gradient drifts underneath; a peach field (upper right) and a blue field (lower left) orbit on separate clocks above it, so the two colours keep blending and shifting but are always both on screen. Transforms only, so it's cheap on the GPU; it stops for "reduce motion".
+- **Theme:** light by default for every reader; Profile › Dark Mode still offers System / Light / Dark as in the design.
+- **Feed:** full-screen, one story per gesture. Phones use native snap (like TikTok/Reels); wheel, trackpad, keyboard and mouse-drag glide exactly one story per flick, swallowing momentum so fast flicks never skip. Light haptic ticks on supporting devices; double-tap anywhere to like with a heart pop.
+- **Motion:** screens fade out and rise in between steps; onboarding lists and account forms enter with a soft stagger.
+- **Nine-second summaries:** every summary is at most 45 words (about nine seconds of reading). The ingest API rejects longer ones.
 
 ## How it works
 
@@ -102,7 +120,7 @@ curl -X DELETE $APP_ORIGIN/api/admin/stories/<id> -H "Authorization: Bearer $ADM
 
 ## Decisions to confirm
 
-- **Logo**: the design offers 1a "Nine" and 1b "Stack". Both are built (`LogoNine`, `LogoStack`); the app icon and favicon use Nine until you pick. Swap by editing `public/icon*.svg` and running `node scripts/render-icons.mjs`.
+- **Logo**: one logo system: The News wordmark plus the "Nine" symbol (`LogoNine`), used for the app icon and favicon. Regenerate icons from `public/icon*.svg` with `node scripts/render-icons.mjs`.
 - **Launch market**: sample places are in Bengaluru (as in the design), and the gazetteer in `server/geo.ts` also covers major cities in the other followed countries.
 - **Additions the design didn't draw** but production needs: a log-out row, account deletion, reset-password page, privacy and terms pages, per-place range screen, notification time setting and reading history. They reuse the design's components.
 - **Legal copy** on `/privacy` and `/terms` describes what the app actually stores, but it needs review before launch.

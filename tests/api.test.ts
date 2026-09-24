@@ -173,3 +173,32 @@ describe('sync', () => {
     expect(r.body.place.area).toBe('Koramangala');
   });
 });
+
+describe('demo auth', () => {
+  it('returns codes in demo mode and signs in the demo reader', async () => {
+    const agent = request.agent(app);
+    const r = await agent.post('/api/auth/signup').send({ name: 'T', email: 't@example.com', password: 'longpass123', terms: true }).expect(201);
+    expect(r.body.devCode).toMatch(/^\d{6}$/);
+    await agent.post('/api/auth/verify').send({ email: 't@example.com', code: r.body.devCode }).expect(200);
+    const demo = request.agent(app);
+    const d = await demo.post('/api/auth/demo').expect(200);
+    expect(d.body.user).toMatchObject({ name: 'Demo Reader', verified: true });
+    expect((await demo.get('/api/auth/me')).body.user.email).toBe('demo@thenews.app');
+    expect((await request(app).get('/api/auth/providers')).body.demo).toBe(true);
+  });
+});
+
+describe('nine-second summaries', () => {
+  it('every seeded story reads in nine seconds', async () => {
+    const { SEED_STORIES } = await import('../server/seed-data');
+    for (const s of SEED_STORIES) expect(s.summary.split(/\s+/).length, s.id).toBeLessThanOrEqual(45);
+  });
+
+  it('ingest rejects summaries that run long', async () => {
+    config.adminToken = 'test-admin';
+    const base = { id: 'long', cat: 'AI Models', topic: 'AI Models', title: 'A title', source: 'S', url: 'https://example.com', publishedAt: new Date().toISOString(), level: 'global', type: 'news' };
+    const long = await request(app).post('/api/admin/stories').set('Authorization', 'Bearer test-admin').send({ stories: [{ ...base, summary: 'word '.repeat(60) }] }).expect(400);
+    expect(long.body.issues[0]).toContain('nine seconds');
+    await request(app).post('/api/admin/stories').set('Authorization', 'Bearer test-admin').send({ stories: [{ ...base, summary: 'word '.repeat(30) }] }).expect(200);
+  });
+});

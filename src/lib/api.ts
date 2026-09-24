@@ -38,12 +38,13 @@ export interface LibraryPayload {
 
 export const api = {
   me: () => call<{ user: User | null; sessionExpired: boolean }>('GET', '/auth/me'),
-  providers: () => call<{ google: boolean; apple: boolean }>('GET', '/auth/providers'),
-  signup: (b: { name: string; email: string; password: string; terms: boolean }) => call<{ pending: true; email: string; resendIn: number }>('POST', '/auth/signup', b),
+  providers: () => call<{ google: boolean; apple: boolean; demo: boolean }>('GET', '/auth/providers'),
+  demo: () => call<{ user: User }>('POST', '/auth/demo'),
+  signup: (b: { name: string; email: string; password: string; terms: boolean }) => call<{ pending: true; email: string; resendIn: number; devCode?: string }>('POST', '/auth/signup', b),
   verify: (email: string, code: string) => call<{ user: User }>('POST', '/auth/verify', { email, code }),
-  resend: (email: string) => call<{ resendIn: number }>('POST', '/auth/resend', { email }),
+  resend: (email: string) => call<{ resendIn: number; devCode?: string }>('POST', '/auth/resend', { email }),
   login: (email: string, password: string) => call<{ user: User }>('POST', '/auth/login', { email, password }),
-  forgot: (email: string) => call<{ ok: true }>('POST', '/auth/forgot', { email }),
+  forgot: (email: string) => call<{ ok: true; devLink?: string }>('POST', '/auth/forgot', { email }),
   reset: (token: string, password: string) => call<{ user: User }>('POST', '/auth/reset', { token, password }),
   logout: () => call<{ ok: true }>('POST', '/auth/logout'),
   deleteAccount: () => call<{ ok: true }>('DELETE', '/auth/me'),

@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Story, Theme } from '../../shared/domain';
-import { LogoNine, LogoStack, Wordmark } from '../components/Brand';
+import { LogoNine, Wordmark } from '../components/Brand';
 import { Icon } from '../components/Icon';
-import { BackButton, Button, Dialog, EditorialMark, FieldError, Switch, T, TextField, Title } from '../components/ui';
+import { BackButton, Button, Dialog, EditorialMark, FieldError, Switch, T, TextField, Title, useStagger } from '../components/ui';
 import { disableNotifications, enableNotifications } from '../lib/device';
 import { useStore } from '../lib/store';
 import { ReaderSheet } from './Feed';
@@ -28,6 +28,7 @@ export function Profile() {
   const { user, prefs, library, updatePrefs, logout } = useStore();
   const home = prefs.places.find(p => p.kind === 'home') ?? prefs.places[0];
   const since = user ? new Date(user.createdAt).toLocaleDateString('en', { month: 'long', year: 'numeric' }).toLowerCase() : null;
+  const stagger = useStagger();
   const theme: { v: Theme; t: string }[] = [{ v: 'system', t: 'System' }, { v: 'light', t: 'Light' }, { v: 'dark', t: 'Dark' }];
   return (
     <div className="screen">
@@ -35,7 +36,7 @@ export function Profile() {
         <button className="link-btn" aria-label="back" onClick={() => nav('/')} style={{ position: 'absolute', left: -4, display: 'flex' }}><Icon name="arrow-left" size={24} /></button>
         <span style={{ font: '600 15px/1 var(--font)' }}>Profile</span>
       </div>
-      <div style={{ position: 'absolute', top: T(116), left: 20, right: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="rise" style={{ position: 'absolute', top: T(116), left: 20, right: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
         <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 18px/1 var(--font)', color: 'var(--gray)', flex: 'none' }}>
           {user ? initials(user.name) : <Icon name="user" size={24} color="var(--gray)" />}
         </div>
@@ -44,7 +45,7 @@ export function Profile() {
           <span style={{ font: '400 13px/1 var(--font)', color: 'var(--gray)' }}>{since ? `reading since ${since}` : 'log in to sync your topics, places and saves.'}</span>
         </div>
       </div>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(204), left: 0, right: 0, bottom: 0, overflowY: 'auto', borderTop: '.5px solid var(--rule)', display: 'flex', flexDirection: 'column' }}>
+      <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(204), left: 0, right: 0, bottom: 0, overflowY: 'auto', borderTop: '.5px solid var(--rule)', display: 'flex', flexDirection: 'column' }}>
         <Row label="Topics" value={`${prefs.topics.length} followed`} onClick={() => nav('/profile/topics')} />
         <Row label="Countries" value={`${prefs.countries.length} followed`} onClick={() => nav('/profile/countries')} />
         <Row label="Places" value={home ? `${home.area}, ${home.radiusKm} km` : 'none yet'} onClick={() => nav('/places')} />
@@ -75,6 +76,7 @@ export function Profile() {
 
 function StoryList({ items, onOpen, saved }: { items: { story: Story; at: number }[]; onOpen: (s: Story) => void; saved?: boolean }) {
   const { toggleSave } = useStore();
+  const stagger = useStagger();
   const when = (at: number) => {
     const d = Math.floor((Date.now() - at) / 86400_000);
     if (d <= 0 && new Date(at).getDate() === new Date().getDate()) return 'today';
@@ -83,7 +85,7 @@ function StoryList({ items, onOpen, saved }: { items: { story: Story; at: number
     return new Date(at).toLocaleDateString('en', { day: 'numeric', month: 'short' }).toLowerCase();
   };
   return (
-    <div className="no-scrollbar" style={{ position: 'absolute', top: T(164), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(164), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {items.map(({ story: s, at }) => (
         <div key={s.id} className="card" style={{ position: 'relative', flex: 'none' }}>
           <button className="row-btn" onClick={() => onOpen(s)} style={{ padding: saved ? '16px 48px 16px 16px' : 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
@@ -104,7 +106,7 @@ function StoryList({ items, onOpen, saved }: { items: { story: Story; at: number
 
 function ListHeader({ title, count, action }: { title: string; count: string; action?: ReactNode }) {
   return (
-    <div style={{ position: 'absolute', top: T(108), left: 20, right: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+    <div className="rise" style={{ position: 'absolute', top: T(108), left: 20, right: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
       <h2 style={{ margin: 0, font: '700 28px/1.1 var(--font)', letterSpacing: '-0.03em' }}>{title}</h2>
       {action ?? <span style={{ font: '400 13px/1 var(--font)', color: 'var(--gray)' }}>{count}</span>}
     </div>
@@ -113,7 +115,7 @@ function ListHeader({ title, count, action }: { title: string; count: string; ac
 
 function EmptyList({ title, body }: { title: string; body: string }) {
   return (
-    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
+    <div className="rise" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
       <EditorialMark />
       <h3 style={{ margin: '24px 0 0', font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>{title}</h3>
       <p style={{ margin: '8px 0 0', maxWidth: 260, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>{body}</p>
@@ -294,11 +296,8 @@ export function BrandPage() {
           <div className="card" style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAFAF8' }}><Wordmark size="xl" /></div>
           <div style={{ height: 90, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0A0A' }}><Wordmark size="lg" inverse /></div>
         </S>
-        <S t="1a · nine">
+        <S t="logo">
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}><LogoNine size={80} /><LogoNine size={80} dark /><LogoNine size={48} /><LogoNine size={32} /><LogoNine size={20} /></div>
-        </S>
-        <S t="1b · stack">
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}><LogoStack size={80} /><LogoStack size={80} dark /><LogoStack size={48} /><LogoStack size={32} /><LogoStack size={20} /></div>
         </S>
         <S t="primary button">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

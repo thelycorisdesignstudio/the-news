@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { COUNTRIES, COVERAGE, POPULAR_COUNTRIES, RADII, TOPICS, countryName, filtersFromPrefs, type Place, type Story } from '../../shared/domain';
 import { Wordmark } from '../components/Brand';
 import { Icon, type IconName } from '../components/Icon';
-import { BackButton, B, Button, Check, Footer, LoaderBar, Segmented, StateMessage, StepHeader, T, Title } from '../components/ui';
+import { BackButton, B, Button, Check, Footer, LoaderBar, Segmented, StateMessage, StepHeader, T, Title, useStagger } from '../components/ui';
 import { api } from '../lib/api';
 import { currentPosition, enableNotifications } from '../lib/device';
 import { useStore } from '../lib/store';
@@ -33,6 +33,7 @@ export function Topics({ edit }: { edit?: boolean }) {
   const [sel, setSel] = useState<string[]>(prefs.topics);
   const ready = sel.length >= 3;
   const toggle = (t: string) => setSel(s => (s.includes(t) ? s.filter(x => x !== t) : [...s, t]));
+  const stagger = useStagger();
   const done = () => {
     if (!ready) return;
     updatePrefs(p => ({
@@ -46,12 +47,12 @@ export function Topics({ edit }: { edit?: boolean }) {
   return (
     <div className="screen">
       {edit ? <BackButton /> : <StepHeader step={1} onSkip={() => nav(STEPS[1])} onNext={done} nextEnabled={ready} />}
-      <div style={{ position: 'absolute', top: T(128), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
+      <div className="rise" style={{ position: 'absolute', top: T(128), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
         <h2 style={{ margin: 0, font: '700 28px/1.25 var(--font)', letterSpacing: '-0.03em' }}>what do you follow?</h2>
         <p style={{ margin: '8px 0 0', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>pick at least three. you can change this anytime.</p>
       </div>
       <div className="no-scrollbar" style={{ position: 'absolute', top: T(232), left: 20, right: 20, bottom: B(120), overflowY: 'auto' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
+        <div className={stagger} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
           {TOPICS.map(t => {
             const on = sel.includes(t);
             return (
@@ -143,13 +144,14 @@ export function Countries() {
   const { locate, busy } = useLocateHome();
   const toggle = (code: string) => updatePrefs(p => ({ countries: p.countries.includes(code) ? p.countries.filter(c => c !== code) : [...p.countries, code] }));
   const n = sel.length;
+  const stagger = useStagger();
   const next = () => n && nav(STEPS[2]);
   return (
     <div className="screen">
       <StepHeader step={2} onSkip={() => nav(STEPS[2])} onNext={next} nextEnabled={n > 0} />
       {/* One flowing column so a two-line title on narrow phones pushes the search down instead of under it. */}
       <div style={{ position: 'absolute', top: T(108), left: 0, right: 0, bottom: B(120), display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8, flex: 'none' }}>
+        <div className="rise" style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8, flex: 'none' }}>
           <h2 style={{ margin: 0, font: '700 28px/1.15 var(--font)', letterSpacing: '-0.03em', color: 'var(--ink)' }}>where do you read from?</h2>
           <p style={{ margin: 0, font: '400 14px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>pick your home country, then any others you follow.</p>
         </div>
@@ -172,7 +174,7 @@ export function Countries() {
             ))}
           </div>
         </div>
-        <div className="no-scrollbar" style={{ marginTop: 22, flex: 1, minHeight: 120, overflowY: 'auto', borderTop: '.5px solid var(--rule)', display: 'flex', flexDirection: 'column', maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)', WebkitMaskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}>
+        <div className={`no-scrollbar ${stagger}`} style={{ marginTop: 22, flex: 1, minHeight: 120, overflowY: 'auto', borderTop: '.5px solid var(--rule)', display: 'flex', flexDirection: 'column', maskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)', WebkitMaskImage: 'linear-gradient(to bottom, #000 calc(100% - 28px), transparent)' }}>
           {rows.map(c => <CountryRow key={c.code} code={c.code} name={c.name} sel={sel.includes(c.code)} home={sel[0] === c.code} onClick={() => toggle(c.code)} highlight={q.trim() || undefined} />)}
           {!rows.length && (
             <div style={{ padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -205,11 +207,12 @@ export function Coverage() {
   const setRadius = (r: number) => updatePrefs(p => ({ radiusKm: r, places: p.places.map(pl => (pl.id === home?.id ? { ...pl, radiusKm: r } : pl)) }));
   const desc = (k: string, d: string) => (k === 'state' && home?.region) || (k === 'city' && home?.city) || d;
   const next = () => ok && nav(STEPS[3]);
+  const stagger = useStagger();
   return (
     <div className="screen">
       <StepHeader step={3} onSkip={() => nav(STEPS[3])} onNext={next} nextEnabled={ok} />
       <Title sub="choose every level you want in your feed.">how local should it get?</Title>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(208), left: 20, right: 20, bottom: B(120), overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(208), left: 20, right: 20, bottom: B(120), overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {COVERAGE.map(c => {
           const on = cov.includes(c.k);
           return (
@@ -264,7 +267,7 @@ export function Coverage() {
 const PACE_STORY = {
   cat: 'AI Models', source: 'The Verge', time: '2h ago',
   title: 'OpenAI releases GPT-5 with reasoning capabilities that exceed PhD-level benchmarks',
-  summary: "OpenAI's newest flagship model scored above human PhD experts on graduate-level science, math and coding benchmarks in the company's own evaluations. GPT-5 plans multi-step problems before answering and checks its work as it reasons. It is rolling out to paid ChatGPT users today, with developer API access next week. Independent researchers have not yet replicated the results.",
+  summary: "OpenAI's GPT-5 beat PhD-level experts on graduate science, math and coding benchmarks in the company's own tests. It plans multi-step problems and checks its work as it reasons. Paid ChatGPT users get it today; developers next week.",
 };
 
 /** 05 · Pace calibration. The real nine-second timer, taught once. */
@@ -300,11 +303,11 @@ export function Pace() {
   return (
     <div className="screen">
       <StepHeader step={4} onSkip={next} onNext={next} nextEnabled={result != null} />
-      <div style={{ position: 'absolute', top: T(112), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
+      <div className="rise" style={{ position: 'absolute', top: T(112), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
         <h2 style={{ margin: 0, font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>let's find your pace.</h2>
         <p style={{ margin: '8px 0 0', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>read this the way you normally would.</p>
       </div>
-      <div className="card no-scrollbar" style={{ position: 'absolute', top: T(196), left: 20, right: 20, maxHeight: `calc(100% - ${T(196)} - var(--sb) - 116px)`, overflowY: 'auto', padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div className="card no-scrollbar rise" style={{ animationDelay: '140ms', position: 'absolute', top: T(196), left: 20, right: 20, maxHeight: `calc(100% - ${T(196)} - var(--sb) - 116px)`, overflowY: 'auto', padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <div style={{ alignSelf: 'stretch', height: 2.5, borderRadius: 2, background: 'var(--rule)', overflow: 'hidden', flex: 'none' }}>
           <div style={{ height: '100%', width: `${Math.min(100, ms / 90)}%`, background: 'var(--signal)', transition: 'width 100ms linear' }} />
         </div>
@@ -363,11 +366,11 @@ export function Notifications() {
   return (
     <div className="screen">
       <StepHeader step={5} onSkip={finish} hideNext />
-      <div style={{ position: 'absolute', top: T(176), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
+      <div className="rise" style={{ position: 'absolute', top: T(176), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
         <h2 style={{ margin: 0, font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>one story a day, right on time.</h2>
         <p style={{ margin: '8px 0 0', maxWidth: 280, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>we'll send your most important story once daily. nothing else.</p>
       </div>
-      <div style={{ position: 'absolute', top: T(320), left: 16, right: 16 }} aria-hidden>
+      <div className="rise" style={{ position: 'absolute', top: T(320), left: 16, right: 16, animationDelay: '200ms' }} aria-hidden>
         <div style={{ position: 'absolute', left: 14, right: 14, top: 16, height: 80, borderRadius: 12, background: 'var(--card)', boxShadow: '0 0 0 1px var(--rule)', opacity: 0.6 }} />
         <div style={{ position: 'relative', padding: '12px 14px', borderRadius: 12, background: 'var(--card)', boxShadow: '0 12px 32px rgba(10,10,10,.08), 0 0 0 1px var(--rule)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{ flex: 'none', width: 38, height: 38, borderRadius: 9, background: 'var(--surface)', border: '1px solid var(--rule)', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: 5, lineHeight: 1 }}>
@@ -407,7 +410,7 @@ export function FindingLocal() {
   }, []);
   return (
     <div className="screen">
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '0 32px', textAlign: 'center' }}>
+      <div className="rise" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '0 32px', textAlign: 'center' }}>
         <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--signal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="radar" size={28} color="var(--signal)" style={{ animation: 'tnPulse 1.2s linear infinite' }} />
         </div>

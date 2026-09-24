@@ -82,6 +82,9 @@ export interface User {
 }
 
 export const STORY_SECONDS = 9;
+/** Nine seconds at an ordinary reading pace (~4.5 words a second). Longer summaries are rejected at ingest. */
+export const SUMMARY_MAX_WORDS = 45;
+export const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
 export const TOPICS = [
   'AI Models', 'AI Policy', 'AI Research', 'AI Tools', 'AI Business', 'AI & Society', 'Quantum Computing',
@@ -144,7 +147,7 @@ export function defaultPrefs(): Prefs {
     filters: { ...EMPTY_FILTERS },
     notifications: { enabled: false, time: '08:00' },
     paceMs: null,
-    theme: 'system',
+    theme: 'light',
     onboarded: false,
     updatedAt: 0,
   };

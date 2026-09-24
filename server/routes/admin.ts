@@ -5,10 +5,12 @@ import type { DB } from '../db';
 import { config } from '../config';
 import { HttpError } from '../auth';
 import { removeStory, upsertStories } from '../stories';
+import { SUMMARY_MAX_WORDS, wordCount } from '../../shared/domain';
 
 const s = z.string().max(4000);
 const story = z.object({
-  id: z.string().regex(/^[\w-]{1,120}$/), cat: s, topic: s, title: z.string().min(1).max(300), summary: z.string().min(1).max(2000),
+  id: z.string().regex(/^[\w-]{1,120}$/), cat: s, topic: s, title: z.string().min(1).max(120),
+  summary: z.string().min(1).max(400).refine(v => wordCount(v) <= SUMMARY_MAX_WORDS, `summaries must read in nine seconds: ${SUMMARY_MAX_WORDS} words at most.`),
   more: z.array(z.object({ h: s, p: s })).max(10).optional(), source: s, url: z.string().url(), publishedAt: z.string().datetime(),
   level: z.enum(['global', 'national', 'state', 'city', 'hyper']), type: z.enum(['news', 'breaking', 'explainer', 'local-alert', 'opinion']),
   country: z.string().regex(/^[A-Z]{2}$/).nullish(), region: s.nullish(), city: s.nullish(), area: s.nullish(),
