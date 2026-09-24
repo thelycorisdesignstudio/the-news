@@ -30,7 +30,8 @@ export function createApp({ db, mail, staticDir }: { db: DB; mail: Mailer; stati
     },
     crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
   }));
-  app.use(compression());
+  // Event streams must reach the client as they're written, so they skip compression.
+  app.use(compression({ filter: (req, res) => !String(res.getHeader('Content-Type') ?? '').startsWith('text/event-stream') && compression.filter(req, res) }));
   app.use(cookieParser());
 
   const api = express.Router();

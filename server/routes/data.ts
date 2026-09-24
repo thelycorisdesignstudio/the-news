@@ -7,6 +7,7 @@ import { getStories, getStory, windowStories } from '../stories';
 import { reverseGeocode, searchPlaces } from '../geo';
 import { matchesFilters, nearestPlace, type Filters, type Place, type Prefs, type Story } from '../../shared/domain';
 import { pushPublicKey } from '../push';
+import { newsEvents } from '../ingest/pipeline';
 
 const str = z.string().max(120);
 const placeSchema = z.object({
@@ -71,6 +72,17 @@ export function dataRoutes(db: DB) {
   r.post('/feed/count', (req, res) => {
     const q = parse(feedQuery, req.body);
     res.json({ count: feedFor(db, q.filters, q.places).length });
+  });
+
+  // Live updates: a server-sent event whenever new stories land, so open feeds can pull them in.
+  r.get('/stream', (req, res) => {
+    res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.flushHeaders();
+    res.write('retry: 15000\n\n');
+    const send = (e: { added: number; ids: string[]; at: string }) => { res.write(`event: stories\ndata: ${JSON.stringify(e)}\n\n`); };
+    newsEvents.on('stories', send);
+    const beat = setInterval(() => res.write(': ping\n\n'), 25_000);
+    req.on('close', () => { clearInterval(beat); newsEvents.off('stories', send); });
   });
 
   r.get('/stories/:id', (req, res) => {

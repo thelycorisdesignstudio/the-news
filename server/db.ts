@@ -86,6 +86,33 @@ const MIGRATIONS = [
      json TEXT NOT NULL,
      last_sent_day TEXT
    );`,
+  // Live ingestion: per-feed fetch state (conditional GET, health, backoff) and every item seen, so
+  // nothing is written up twice and the same story from several outlets folds into one card.
+  `CREATE TABLE feed_state (
+     source_id TEXT PRIMARY KEY,
+     etag TEXT,
+     last_modified TEXT,
+     last_fetch_at INTEGER,
+     last_ok_at INTEGER,
+     last_error TEXT,
+     failures INTEGER NOT NULL DEFAULT 0,
+     items INTEGER NOT NULL DEFAULT 0
+   );
+   CREATE TABLE ingest_items (
+     url_hash TEXT PRIMARY KEY,
+     source_id TEXT NOT NULL,
+     story_id TEXT,
+     title_key TEXT NOT NULL,
+     status TEXT NOT NULL,
+     attempts INTEGER NOT NULL DEFAULT 0,
+     payload TEXT,
+     published_at TEXT,
+     seen_at INTEGER NOT NULL
+   );
+   CREATE INDEX ingest_items_status ON ingest_items(status);
+   CREATE INDEX ingest_items_seen ON ingest_items(seen_at);
+   ALTER TABLE stories ADD COLUMN sources INTEGER NOT NULL DEFAULT 1;
+   ALTER TABLE stories ADD COLUMN ingested_at INTEGER;`,
 ];
 
 export function openDb(path: string): DB {

@@ -17,7 +17,26 @@ export const config = {
   port: Number(env.PORT || 8787),
   appOrigin: (env.APP_ORIGIN || 'http://localhost:5173').replace(/\/$/, ''),
   databasePath: env.DATABASE_PATH || './data/the-news.db',
-  seedDemo: env.SEED_DEMO ? env.SEED_DEMO === '1' : true,
+  /** Bundled demo stories. Off by default once live news is on, so real and demo stories never mix. */
+  seedDemo: env.SEED_DEMO ? env.SEED_DEMO === '1' : env.LIVE_NEWS === '0',
+  /**
+   * Real-time ingestion: RSS/Atom from Yahoo Finance, tech and business desks, wires via Google News and city papers, read in full
+   * through Jina Reader (agent-reach's web channel) and written up by Claude. LIVE_NEWS=0 turns it off.
+   */
+  news: {
+    live: env.LIVE_NEWS !== '0',
+    /** Newest items written up per cycle, so a cold start or a backlog can't run up a bill. */
+    maxPerCycle: Math.max(1, Number(env.INGEST_MAX_PER_CYCLE || 40)),
+    /** Extra feeds, comma-separated `name|url` or bare urls. */
+    extraFeeds: env.NEWS_FEEDS || '',
+    anthropicKey: env.ANTHROPIC_API_KEY || '',
+    model: env.NEWS_MODEL || 'claude-opus-5',
+    readerUrl: (env.READER_URL || 'https://r.jina.ai/').replace(/\/?$/, '/'),
+    readerKey: env.JINA_API_KEY || '',
+    reader: env.READER !== '0',
+    /** Optional: path to the agent-reach CLI; its `doctor --json` report is merged into /api/admin/sources. */
+    agentReachBin: env.AGENT_REACH_BIN || '',
+  },
   adminToken: env.ADMIN_TOKEN || '',
   /**
    * Dummy auth for testing: verification codes and reset links come back in API responses, and

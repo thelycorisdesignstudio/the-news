@@ -62,6 +62,42 @@ export function useFeed(filters: Filters, places: Place[], paused = false) {
     void load({ keepQueue: true });
   }, [key, paused, load]);
 
+  // Live: when the newsroom publishes, new stories join the end of the queue. The card you're on
+  // and everything before it stay where they are; stories already queued pick up edits (e.g. breaking).
+  const merging = useRef(false);
+  const merge = useCallback(async () => {
+    if (merging.current) return;
+    merging.current = true;
+    try {
+      const c = cachedFeed();
+      if (!c || c.key !== key) return;
+      const res = await api.feed(filters, places, c.stories.map(s => s.id));
+      const fresh = new Map(res.stories.map(s => [s.id, s]));
+      const have = new Set(c.stories.map(s => s.id));
+      const added = res.stories.filter(s => !have.has(s.id) && !s.removed);
+      if (!added.length && !c.stories.some(s => fresh.has(s.id) && JSON.stringify(fresh.get(s.id)) !== JSON.stringify(s))) return;
+      const stories = [...c.stories.map(s => fresh.get(s.id) ?? s), ...added];
+      const fetchedAt = Date.now();
+      storage.set('feed', { key, stories, fetchedAt });
+      setState(st => (st.status === 'ready' ? { ...st, stories, fetchedAt, stale: false, error: null } : st));
+    } catch {
+      // A missed live update is harmless: the next refresh brings everything in.
+    } finally {
+      merging.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  useEffect(() => {
+    if (paused || typeof EventSource === 'undefined') return;
+    const es = new EventSource('/api/stream');
+    let t = 0;
+    // Bursts of publishes arrive together; one merge covers them.
+    const on = () => { window.clearTimeout(t); t = window.setTimeout(() => void merge(), 1500); };
+    es.addEventListener('stories', on);
+    return () => { window.clearTimeout(t); es.close(); };
+  }, [paused, merge]);
+
   // Coming back online after showing the cached queue: quietly refresh.
   useEffect(() => {
     const on = () => { if (state.stale) void load({ keepQueue: true }); };

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Wordmark } from '../components/Brand';
 import { LoaderBar } from '../components/ui';
+import { GlassBg } from '../components/Glass';
 import { storage } from '../lib/storage';
 
 /** 01 · Splash. Wordmark at 2×; the loader is the only colour on screen. */
@@ -28,13 +29,13 @@ export function Landing() {
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', paddingTop: 'calc(var(--st) + 12px)' }}>
         <Wordmark size="sm" />
-        <button onClick={start} style={{ padding: '10px 16px', border: 0, borderRadius: 50, background: 'var(--signal)', color: '#FFFFFF', font: '600 13px/1 var(--font)', cursor: 'pointer' }}>Start Reading</button>
+        <button onClick={start} className="lg lg-signal" style={{ padding: '10px 16px', border: 0, borderRadius: 50, background: 'transparent', color: '#FFFFFF', font: '600 13px/1 var(--font)', cursor: 'pointer' }}><GlassBg />Start Reading</button>
       </div>
       <div style={{ padding: '56px 24px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <span className="eyebrow" style={{ letterSpacing: '.08em' }}>AI &amp; technology, daily</span>
         <h1 style={{ margin: '16px 0 0', font: '700 38px/1.1 var(--font)', letterSpacing: '-0.03em', color: 'var(--ink)' }}>be dangerously well informed.</h1>
         <p style={{ margin: '16px 0 0', font: '300 16px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>The day's most important stories in AI and technology, one full-screen card each. Read in nine seconds, swipe for the next.</p>
-        <button onClick={start} style={{ marginTop: 32, padding: '16px 28px', border: 0, borderRadius: 50, background: 'var(--signal)', color: '#FFFFFF', font: '600 16px/1 var(--font)', cursor: 'pointer' }}>start reading free</button>
+        <button onClick={start} className="lg lg-signal" style={{ marginTop: 32, padding: '16px 28px', border: 0, borderRadius: 50, background: 'transparent', color: '#FFFFFF', font: '600 16px/1 var(--font)', cursor: 'pointer' }}><GlassBg />start reading free</button>
       </div>
       <div style={{ padding: '56px 24px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <span className="eyebrow" style={{ letterSpacing: '.08em' }}>what we cover</span>

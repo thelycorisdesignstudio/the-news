@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { RADII, countryName, type Place } from '../../shared/domain';
 import { Icon, type IconName } from '../components/Icon';
 import { BackButton, Button, Footer, Segmented, Switch, T, Title, useStagger } from '../components/ui';
+import { GlassBg } from '../components/Glass';
 import { api } from '../lib/api';
 import { currentPosition } from '../lib/device';
 import { useStore } from '../lib/store';
@@ -135,7 +136,7 @@ export function PlaceDetail() {
             <span className="eyebrow">label</span>
             <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
               {(['work', 'other'] as const).map(k => (
-                <button key={k} className={`chip-sm${place.kind === k ? ' is-on' : ''}`} onClick={() => set({ kind: k, label: k === 'work' ? 'Work' : place.area })}>{k === 'work' ? 'Work' : place.area}</button>
+                <button key={k} className={`chip-sm lg${place.kind === k ? ' is-on' : ''}`} onClick={() => set({ kind: k, label: k === 'work' ? 'Work' : place.area })}><GlassBg />{k === 'work' ? 'Work' : place.area}</button>
               ))}
             </div>
           </div>

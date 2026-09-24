@@ -4,6 +4,7 @@ import type { Story, Theme } from '../../shared/domain';
 import { LogoNine, Wordmark } from '../components/Brand';
 import { Icon } from '../components/Icon';
 import { BackButton, Button, Dialog, EditorialMark, FieldError, Switch, T, TextField, Title, useStagger } from '../components/ui';
+import { GlassBg } from '../components/Glass';
 import { disableNotifications, enableNotifications } from '../lib/device';
 import { useStore } from '../lib/store';
 import { ReaderSheet } from './Feed';
@@ -33,7 +34,7 @@ export function Profile() {
   return (
     <div className="screen">
       <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <button className="link-btn" aria-label="back" onClick={() => nav('/')} style={{ position: 'absolute', left: -4, display: 'flex' }}><Icon name="arrow-left" size={24} /></button>
+        <button className="link-btn lg lg-icon" aria-label="back" onClick={() => nav('/')} style={{ position: 'absolute', left: -6 }}><GlassBg /><Icon name="arrow-left" size={20} /></button>
         <span style={{ font: '600 15px/1 var(--font)' }}>Profile</span>
       </div>
       <div className="rise" style={{ position: 'absolute', top: T(116), left: 20, right: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -53,10 +54,11 @@ export function Profile() {
         <Row label="Reading History" onClick={() => nav('/history')} />
         <Row label="Saved Stories" value={String(library.saved.length)} onClick={() => nav('/saved')} />
         <Row label="Dark Mode">
-          <div role="radiogroup" aria-label="appearance" style={{ display: 'flex', padding: 2, borderRadius: 50, background: 'var(--rule)', font: '600 12px/1 var(--font)' }}>
+          <div role="radiogroup" aria-label="appearance" className="lg" style={{ display: 'flex', padding: 2, borderRadius: 50, font: '600 12px/1 var(--font)' }}>
+            <GlassBg />
             {theme.map(o => (
-              <button key={o.v} role="radio" aria-checked={prefs.theme === o.v} className="link-btn" onClick={() => updatePrefs({ theme: o.v })}
-                style={{ padding: '7px 12px', borderRadius: 50, background: prefs.theme === o.v ? 'var(--card)' : 'transparent', color: prefs.theme === o.v ? 'var(--ink)' : 'var(--gray)', boxShadow: prefs.theme === o.v ? '0 1px 2px rgba(10,10,10,.06)' : undefined, font: '600 12px/1 var(--font)' }}>{o.t}</button>
+              <button key={o.v} role="radio" aria-checked={prefs.theme === o.v} className={`link-btn${prefs.theme === o.v ? ' lg lg-raised' : ''}`} onClick={() => updatePrefs({ theme: o.v })}
+                style={{ padding: '7px 12px', borderRadius: 50, color: prefs.theme === o.v ? 'var(--ink)' : 'var(--gray)', font: '600 12px/1 var(--font)' }}>{prefs.theme === o.v && <GlassBg />}{o.t}</button>
             ))}
           </div>
         </Row>
@@ -94,8 +96,8 @@ function StoryList({ items, onOpen, saved }: { items: { story: Story; at: number
             <span style={{ font: '500 12px/1 var(--font)', color: 'var(--ink)' }}>{s.source} <span style={{ color: 'var(--gray)', fontWeight: 400 }}>· {saved ? `saved ${when(at)}` : `read ${when(at)}`}</span></span>
           </button>
           {saved && (
-            <button aria-label="remove from saved" className="link-btn" onClick={() => toggleSave(s)} style={{ position: 'absolute', top: 12, right: 12, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Icon name="bookmark-check" size={20} color="var(--signal)" />
+            <button aria-label="remove from saved" className="link-btn lg lg-icon lg-soft" onClick={() => toggleSave(s)} style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32 }}>
+              <GlassBg /><Icon name="bookmark-check" size={18} color="var(--signal)" />
             </button>
           )}
         </div>
@@ -223,8 +225,8 @@ export function About() {
           <Button loading={busy} onClick={async () => {
             setBusy(true);
             try { await deleteAccount(); nav('/welcome', { replace: true }); } catch { showToast("couldn't delete your account. try again."); setBusy(false); }
-          }} style={{ background: 'var(--alert)' }}>delete account</Button>
-          <button className="link-btn" onClick={() => setConfirm(false)} style={{ textAlign: 'center', paddingTop: 8, font: '500 14px/1 var(--font)', color: 'var(--gray)' }}>cancel</button>
+          }} variant="danger">delete account</Button>
+          <Button variant="light" onClick={() => setConfirm(false)}>cancel</Button>
         </Dialog>
       )}
     </div>

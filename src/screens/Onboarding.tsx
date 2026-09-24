@@ -4,6 +4,7 @@ import { COUNTRIES, COVERAGE, POPULAR_COUNTRIES, RADII, TOPICS, countryName, fil
 import { Wordmark } from '../components/Brand';
 import { Icon, type IconName } from '../components/Icon';
 import { BackButton, B, Button, Check, Footer, LoaderBar, Segmented, StateMessage, StepHeader, T, Title, useStagger } from '../components/ui';
+import { GlassBg } from '../components/Glass';
 import { api } from '../lib/api';
 import { currentPosition, enableNotifications } from '../lib/device';
 import { useStore } from '../lib/store';
@@ -56,8 +57,8 @@ export function Topics({ edit }: { edit?: boolean }) {
           {TOPICS.map(t => {
             const on = sel.includes(t);
             return (
-              <button key={t} className={`chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => toggle(t)}>
-                {on && <Icon name="tick" size={12} color="var(--signal)" style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
+              <button key={t} className={`chip lg${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => toggle(t)}>
+                <GlassBg />{on && <Icon name="tick" size={12} color="var(--signal)" style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
               </button>
             );
           })}
@@ -161,15 +162,16 @@ export function Countries() {
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="search countries" aria-label="search countries" autoComplete="off" />
             {q && <button className="link-btn" aria-label="clear search" onClick={() => setQ('')} style={{ display: 'flex' }}><Icon name="cancel-circle" size={18} color="var(--gray-2)" /></button>}
           </div>
-          <button className="link-btn" onClick={locate} disabled={busy} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 4 }}>
+          <button className="link-btn lg" onClick={locate} disabled={busy} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px 10px 12px', borderRadius: 50 }}>
+            <GlassBg />
             <Icon name={busy ? 'loading' : 'gps'} spin={busy} size={18} color="var(--signal)" />
             <span style={{ font: '600 14px/1 var(--font)', color: 'var(--signal)' }}>{busy ? 'finding you…' : 'use my current location'}</span>
           </button>
           <div className="no-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', minHeight: 28 }}>
             {sel.map((code, i) => (
-              <button key={code} onClick={() => toggle(code)} aria-label={`remove ${countryName(code)}`}
-                style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 7px 12px', borderRadius: 50, background: 'var(--signal-tint)', border: '.5px solid var(--signal)', font: '600 13px/1 var(--font)', color: 'var(--signal)', cursor: 'pointer' }}>
-                {countryName(code)}{i === 0 ? ' · home' : ''}<Icon name="cancel" size={13} color="var(--signal)" />
+              <button key={code} onClick={() => toggle(code)} aria-label={`remove ${countryName(code)}`} className="lg lg-soft"
+                style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 7px 12px', borderRadius: 50, background: 'transparent', border: '.5px solid var(--signal)', font: '600 13px/1 var(--font)', color: 'var(--signal)', cursor: 'pointer' }}>
+                <GlassBg />{countryName(code)}{i === 0 ? ' · home' : ''}<Icon name="cancel" size={13} color="var(--signal)" />
               </button>
             ))}
           </div>
@@ -216,8 +218,9 @@ export function Coverage() {
         {COVERAGE.map(c => {
           const on = cov.includes(c.k);
           return (
-            <button className={on ? undefined : 'frost'} key={c.k} role="checkbox" aria-checked={on} onClick={() => toggle(c.k)}
-              style={{ flex: 'none', height: 64, padding: '0 16px', borderRadius: 12, background: on ? 'var(--signal-tint)' : 'var(--card)', border: `1px solid ${on ? 'var(--signal)' : 'var(--rule)'}`, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left', animation: on ? 'tnBounce 200ms ease-out' : undefined }}>
+            <button className={`lg lg-card${on ? ' lg-soft' : ''}`} key={c.k} role="checkbox" aria-checked={on} onClick={() => toggle(c.k)}
+              style={{ flex: 'none', height: 64, padding: '0 16px', borderRadius: 12, background: 'transparent', border: `1px solid ${on ? 'var(--signal)' : 'transparent'}`, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left', animation: on ? 'tnBounce 200ms ease-out' : undefined }}>
+              <GlassBg />
               <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', background: on ? 'var(--card)' : 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name={COVERAGE_ICON[c.icon]} size={18} color={on ? 'var(--signal)' : 'var(--ink)'} />
               </span>

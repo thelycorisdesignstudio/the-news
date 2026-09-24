@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { GlassBg } from './Glass';
 import { useStore } from '../lib/store';
 
 /* ---------------- device ---------------- */
@@ -73,9 +74,10 @@ export const B = (designBottom: number) => `calc(var(--sb) + ${designBottom - 34
 export function BackButton({ onClick, to }: { onClick?: () => void; to?: string }) {
   const nav = useNavigate();
   return (
-    <button aria-label="back" className="link-btn" onClick={onClick ?? (() => (to ? nav(to) : nav(-1)))}
-      style={{ position: 'absolute', top: T(60), left: 12, height: 32, width: 40, display: 'flex', alignItems: 'center', paddingLeft: 4, zIndex: 3 }}>
-      <Icon name="arrow-left" size={24} color="var(--ink)" />
+    <button aria-label="back" className="link-btn lg lg-icon" onClick={onClick ?? (() => (to ? nav(to) : nav(-1)))}
+      style={{ position: 'absolute', top: T(58), left: 14, zIndex: 3 }}>
+      <GlassBg />
+      <Icon name="arrow-left" size={20} color="var(--ink)" />
     </button>
   );
 }
@@ -86,15 +88,15 @@ export function StepHeader({ step, total = 5, onSkip, onNext, nextEnabled = true
 }) {
   return (
     <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
-      <button className="link-btn" onClick={onSkip} style={{ font: '500 14px/1 var(--font)', color: 'var(--gray)', minWidth: 40, textAlign: 'left' }}>Skip</button>
+      <button className="link-btn lg lg-pill" onClick={onSkip} style={{ font: '500 14px/1 var(--font)', color: 'var(--gray)' }}><GlassBg />Skip</button>
       <div style={{ display: 'flex', gap: 6 }} aria-label={`step ${step} of ${total}`} role="img">
         {Array.from({ length: total }, (_, i) => (
           <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: i === step - 1 ? 'var(--signal)' : 'var(--rule)' }} />
         ))}
       </div>
-      {hideNext ? <span style={{ width: 40 }} /> : (
-        <button className="link-btn" disabled={!nextEnabled} onClick={onNext}
-          style={{ font: '600 14px/1 var(--font)', color: nextEnabled ? 'var(--signal)' : 'var(--gray-2)', transition: 'color 150ms', minWidth: 40, textAlign: 'right' }}>Next</button>
+      {hideNext ? <span style={{ width: 58 }} /> : (
+        <button className="link-btn lg lg-pill" disabled={!nextEnabled} onClick={onNext}
+          style={{ font: '600 14px/1 var(--font)', color: nextEnabled ? 'var(--signal)' : 'var(--gray-2)', transition: 'color 150ms' }}><GlassBg />Next</button>
       )}
     </div>
   );
@@ -121,11 +123,12 @@ export function Footer({ children, bottom = 44, gap = 12, style, className }: { 
 /* ---------------- controls ---------------- */
 
 export function Button({ variant = 'primary', loading, icon, children, style, ...rest }: {
-  variant?: 'primary' | 'secondary' | 'dark' | 'light'; loading?: boolean; icon?: IconName;
+  variant?: 'primary' | 'secondary' | 'dark' | 'light' | 'danger'; loading?: boolean; icon?: IconName;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button {...rest} disabled={rest.disabled || loading} aria-busy={loading || undefined}
-      className={`btn btn-${variant}${loading ? ' is-loading' : ''} ${rest.className ?? ''}`} style={style}>
+      className={`btn btn-${variant} lg${loading ? ' is-loading' : ''} ${rest.className ?? ''}`} style={style}>
+      <GlassBg />
       {loading ? <Icon name="loading" size={20} spin /> : icon ? <Icon name={icon} size={20} /> : null}
       {children}
     </button>
@@ -182,8 +185,9 @@ export function Check({ on, size = 22 }: { on: boolean; size?: number }) {
 
 export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button role="switch" aria-checked={on} aria-label={label} className="link-btn" onClick={() => onChange(!on)}
-      style={{ flex: 'none', width: 51, height: 31, borderRadius: 16, background: on ? 'var(--signal)' : 'var(--rule-3)', position: 'relative', transition: 'background 150ms' }}>
+    <button role="switch" aria-checked={on} aria-label={label} className={`link-btn lg lg-switch${on ? ' is-on' : ''}`} onClick={() => onChange(!on)}
+      style={{ flex: 'none', width: 51, height: 31, borderRadius: 16, position: 'relative' }}>
+      <GlassBg />
       <span style={{ position: 'absolute', top: 2, left: on ? 22 : 2, width: 27, height: 27, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 2px 4px rgba(10,10,10,.2)', transition: 'left 150ms' }} />
     </button>
   );
@@ -193,11 +197,12 @@ export function Segmented<T extends string | number>({ options, value, onChange,
   options: { v: T; t: string }[]; value: T; onChange: (v: T) => void; label: string; style?: CSSProperties;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} style={{ display: 'grid', gridTemplateColumns: `repeat(${options.length}, 1fr)`, padding: 3, borderRadius: 50, background: 'var(--rule)', ...style }}>
+    <div role="radiogroup" aria-label={label} className="lg" style={{ display: 'grid', gridTemplateColumns: `repeat(${options.length}, 1fr)`, padding: 3, borderRadius: 50, ...style }}>
+      <GlassBg />
       {options.map(o => (
-        <button key={String(o.v)} role="radio" aria-checked={o.v === value} className="link-btn" onClick={() => onChange(o.v)}
-          style={{ height: 34, borderRadius: 50, background: o.v === value ? 'var(--signal)' : 'transparent', color: o.v === value ? '#FFFFFF' : 'var(--gray)', font: '600 13px/1 var(--font)', transition: 'background 150ms, color 150ms' }}>
-          {o.t}
+        <button key={String(o.v)} role="radio" aria-checked={o.v === value} className={`link-btn${o.v === value ? ' lg lg-signal' : ''}`} onClick={() => onChange(o.v)}
+          style={{ height: 34, borderRadius: 50, color: o.v === value ? '#FFFFFF' : 'var(--gray)', font: '600 13px/1 var(--font)', transition: 'color 150ms' }}>
+          {o.v === value && <GlassBg />}{o.t}
         </button>
       ))}
     </div>

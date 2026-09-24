@@ -5,6 +5,7 @@ import { Chevron, FeedCard, FeedNav, FeedSkeleton, FeedStateCard, ProgressTrack,
 import { Icon } from '../components/Icon';
 import { Wordmark } from '../components/Brand';
 import { Button, EditorialMark, Footer, Sheet, Shimmer, StateMessage, T } from '../components/ui';
+import { GlassBg } from '../components/Glass';
 import { api, ApiError } from '../lib/api';
 import { shareStory } from '../lib/device';
 import { haptic, useDoubleTap, useSnapPager } from '../lib/pager';
@@ -31,7 +32,12 @@ export function Feed({ filtersOpen }: { filtersOpen?: boolean }) {
   const [now, setNow] = useState(start);
   const [done, setDone] = useState<Record<string, boolean>>({});
   const queueKey = stories.map(s => s.id).join(',');
+  const prevQueue = useRef('');
   useEffect(() => {
+    // Live stories append to the queue: keep your place. Anything else is a new queue: start at the top.
+    const extended = prevQueue.current && queueKey.startsWith(prevQueue.current + ',');
+    prevQueue.current = queueKey;
+    if (extended) return;
     setIdx(0);
     setDone({});
     const t = performance.now();
@@ -271,7 +277,7 @@ function CaughtUp({ segments, count, saved, onTop }: { segments: number; count: 
           <div style={{ width: 1, height: 32, background: 'var(--rule)' }} />
           <Stat v={saved} l="saved" />
         </div>
-        <button onClick={onTop} style={{ marginTop: 32, padding: '14px 28px', border: 0, borderRadius: 50, background: 'var(--signal)', color: '#FFFFFF', font: '600 14px/1 var(--font)', cursor: 'pointer' }}>back to top</button>
+        <button onClick={onTop} className="lg lg-signal" style={{ marginTop: 32, padding: '14px 28px', border: 0, borderRadius: 50, background: 'transparent', color: '#FFFFFF', font: '600 14px/1 var(--font)', cursor: 'pointer' }}><GlassBg />back to top</button>
       </div>
     </div>
   );
@@ -285,13 +291,13 @@ function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: nu
   const cats = useMemo(() => [...new Set(stories.filter(s => !s.removed).map(s => s.cat))], [stories]);
   const now = Date.now();
   const rows = stories.map((s, i) => ({ s, prog: track[i] })).filter(r => !r.s.removed && (!cat || r.s.cat === cat));
-  const chip = (on: boolean) => ({ flex: 'none', padding: '8px 14px', borderRadius: 50, border: 0, background: on ? 'var(--signal)' : 'var(--rule)', color: on ? '#FFFFFF' : 'var(--ink)', font: '600 13px/1 var(--font)', cursor: 'pointer' } as const);
+  const chip = (on: boolean) => ({ flex: 'none', padding: '8px 14px', borderRadius: 50, border: 0, background: 'transparent', color: on ? '#FFFFFF' : 'var(--ink)', font: '600 13px/1 var(--font)', cursor: 'pointer' } as const);
   return (
     <>
       <FeedNav {...nav} view="list" showFilter={false} top={62} />
       <div className="no-scrollbar" role="tablist" style={{ position: 'absolute', top: T(108), left: 0, right: 0, display: 'flex', gap: 8, padding: '0 20px', overflowX: 'auto' }}>
-        <button role="tab" aria-selected={!cat} style={chip(!cat)} onClick={() => setCat(null)}>All</button>
-        {cats.map(c => <button key={c} role="tab" aria-selected={cat === c} style={chip(cat === c)} onClick={() => setCat(c)}>{c}</button>)}
+        <button role="tab" aria-selected={!cat} className={`lg${!cat ? ' lg-signal' : ''}`} style={chip(!cat)} onClick={() => setCat(null)}><GlassBg />All</button>
+        {cats.map(c => <button key={c} role="tab" aria-selected={cat === c} className={`lg${cat === c ? ' lg-signal' : ''}`} style={chip(cat === c)} onClick={() => setCat(c)}><GlassBg />{c}</button>)}
       </div>
       <div className="no-scrollbar" style={{ position: 'absolute', top: T(156), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {rows.map(({ s, prog }) => (
@@ -427,14 +433,14 @@ function FilterSheet({ onClose }: { onClose: () => void }) {
               {g.items.map(t => {
                 const on = f[g.k].includes(t);
                 return (
-                  <button key={t} aria-pressed={on} className={`chip-sm${on ? ' is-on' : ''}`} onClick={() => toggle(g.k, t)}>
-                    {on && <Icon name="tick" size={13} color="var(--signal)" style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
+                  <button key={t} aria-pressed={on} className={`chip-sm lg${on ? ' is-on' : ''}`} onClick={() => toggle(g.k, t)}>
+                    <GlassBg />{on && <Icon name="tick" size={13} color="var(--signal)" style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
                   </button>
                 );
               })}
               {g.add && (
-                <button onClick={() => nav(g.add!)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '9px 12px', borderRadius: 50, border: '.5px dashed var(--gray-2)', background: 'transparent', font: '600 13px/1 var(--font)', color: 'var(--gray)', cursor: 'pointer' }}>
-                  <Icon name="add" size={13} color="var(--gray)" />add
+                <button onClick={() => nav(g.add!)} className="lg" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '9px 12px', borderRadius: 50, border: '.5px dashed var(--gray-2)', background: 'transparent', font: '600 13px/1 var(--font)', color: 'var(--gray)', cursor: 'pointer' }}>
+                  <GlassBg /><Icon name="add" size={13} color="var(--gray)" />add
                 </button>
               )}
             </div>

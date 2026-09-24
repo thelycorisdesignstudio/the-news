@@ -213,7 +213,7 @@ input { font-family: var(--font); }
   -webkit-mask: radial-gradient(closest-side, transparent 64%, rgba(0, 0, 0, .55) 84%, #000 100%);
   mask: radial-gradient(closest-side, transparent 64%, rgba(0, 0, 0, .55) 84%, #000 100%);
 }
-.lg__tint { background: var(--glass-tint); transition: background 180ms; }
+.lg__tint { background: var(--lg-tint, var(--glass-tint)); transition: background 180ms; }
 .lg__rim {
   padding: 1px;
   background: linear-gradient(135deg, var(--glass-rim-hi) 0%, var(--glass-rim-lo) 38%, var(--glass-rim-lo) 62%, var(--glass-rim-hi) 100%);
@@ -227,7 +227,40 @@ input { font-family: var(--font); }
 }
 .lg.is-like .lg__tint { background: color-mix(in srgb, var(--alert-tint) 82%, transparent); }
 .lg.is-save .lg__tint { background: color-mix(in srgb, var(--signal-tint) 82%, transparent); }
-@media (hover: hover) { .lg:hover .lg__tint { background: color-mix(in srgb, var(--glass-tint), rgba(255, 255, 255, .5) 25%); } }
+@media (hover: hover) { .lg:hover:not(:disabled) .lg__tint { background: color-mix(in srgb, var(--lg-tint, var(--glass-tint)), rgba(255, 255, 255, .5) 18%); } }
+
+/* Every button is glass. Tinted glass keeps each control's design colour; clear glass sits on the gradient. */
+.btn.lg { background: transparent; }
+.btn.lg:active:not(:disabled) { transform: scale(.975); }
+.btn-primary.lg { --lg-tint: color-mix(in srgb, var(--signal) 90%, transparent); box-shadow: 0 8px 22px color-mix(in srgb, var(--signal) 28%, transparent), 0 1px 2px rgba(10, 10, 10, .08); }
+.btn-primary.lg:active:not(:disabled) { background: transparent; --lg-tint: color-mix(in srgb, var(--signal-press) 94%, transparent); }
+.btn-primary.lg:disabled:not(.is-loading) { background: transparent; --lg-tint: color-mix(in srgb, var(--rule) 88%, transparent); box-shadow: none; }
+.btn-primary.lg.is-loading { background: transparent; }
+.btn-secondary.lg { background: transparent; }
+.btn-dark.lg { --lg-tint: color-mix(in srgb, var(--ink) 88%, transparent); }
+.btn-light.lg { border-color: transparent; }
+.chip.lg, .chip-sm.lg { background: transparent; border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--glass-shadow); }
+.chip.lg.is-on, .chip-sm.lg.is-on { --lg-tint: color-mix(in srgb, var(--signal-tint) 86%, transparent); border-color: var(--signal); box-shadow: 0 4px 14px color-mix(in srgb, var(--signal) 16%, transparent); }
+.chip.lg.is-off-disabled { --lg-tint: color-mix(in srgb, var(--rule) 80%, transparent); box-shadow: none; }
+.btn-danger { color: #FFFFFF; }
+.btn-danger.lg { --lg-tint: color-mix(in srgb, var(--alert) 90%, transparent); }
+/* Shapes and tints for the other glass controls. */
+.lg.lg-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0; }
+.lg.lg-pill { padding: 9px 14px; border-radius: 50px; min-width: 58px; text-align: center; }
+.lg.lg-pill:disabled { box-shadow: none; }
+.lg-signal { --lg-tint: color-mix(in srgb, var(--signal) 90%, transparent); color: #FFFFFF; box-shadow: 0 6px 18px color-mix(in srgb, var(--signal) 26%, transparent), 0 1px 2px rgba(10, 10, 10, .08); }
+.lg-signal:active:not(:disabled) { --lg-tint: color-mix(in srgb, var(--signal-press) 94%, transparent); }
+.lg-soft { --lg-tint: color-mix(in srgb, var(--signal-tint) 86%, transparent); }
+.lg-raised { --lg-tint: color-mix(in srgb, var(--card) 80%, transparent); box-shadow: 0 1px 3px rgba(10, 10, 10, .1); }
+.lg-card { box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 16px rgba(10, 10, 10, .05); }
+.lg-card:active:not(:disabled) { transform: scale(.985); }
+.lg-card .lg__lens { -webkit-mask: none; mask: none; opacity: 0; }
+.lg-switch { transition: transform 180ms; }
+.lg-switch.is-on { --lg-tint: color-mix(in srgb, var(--signal) 92%, transparent); }
+.lg-switch:not(.is-on) { --lg-tint: color-mix(in srgb, var(--rule-3) 70%, transparent); }
+.lg-switch > span:last-child { z-index: 1; }
+/* Tinted glass is dense, so the refracting ring shows as light on the edge rather than colour through it. */
+.btn-primary.lg .lg__lens, .btn-dark.lg .lg__lens, .btn-danger.lg .lg__lens, .lg-signal .lg__lens, .lg-switch.is-on .lg__lens { opacity: .55; }
 
 /* Frosted glass: cards and chips. Same material without refraction, a little more tint for reading. */
 .frost { background: var(--frost) !important; border-color: var(--frost-border) !important; -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 16px rgba(10, 10, 10, .04); }

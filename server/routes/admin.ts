@@ -5,6 +5,7 @@ import type { DB } from '../db';
 import { config } from '../config';
 import { HttpError } from '../auth';
 import { removeStory, upsertStories } from '../stories';
+import { agentReachDoctor, runCycle, sourceHealth } from '../ingest/pipeline';
 import { SUMMARY_MAX_WORDS, wordCount } from '../../shared/domain';
 
 const s = z.string().max(4000);
@@ -31,6 +32,13 @@ export function adminRoutes(db: DB) {
     if (!parsed.success) throw new HttpError(400, 'invalid stories.', { issues: parsed.error.issues.slice(0, 10).map(i => `${i.path.join('.')}: ${i.message}`) });
     upsertStories(db, parsed.data.stories);
     res.json({ upserted: parsed.data.stories.length });
+  });
+  // Live ingestion: per-feed health (plus agent-reach's own doctor report when installed), and a manual run.
+  r.get('/sources', async (_req, res) => {
+    res.json({ live: config.news.live, writer: config.news.anthropicKey ? config.news.model : 'extractive', ...sourceHealth(db), agentReach: await agentReachDoctor() });
+  });
+  r.post('/ingest', async (_req, res) => {
+    res.json(await runCycle(db, { force: true }));
   });
   r.delete('/stories/:id', (req, res) => {
     if (!removeStory(db, req.params.id)) throw new HttpError(404, 'story not found.');
