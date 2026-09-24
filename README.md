@@ -1,25 +1,108 @@
-# CODING AGENTS: READ THIS FIRST
+# The News
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+The day's most important stories in AI and technology, plus local and hyperlocal news, one full-screen card at a time. Nine seconds a story, and a finish line every day.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+This is the production implementation of the Claude Design handoff in `project/` (primary design: `project/The News v2.dc.html`; the conversation behind it is in `chats/`, and the handoff notes are in `HANDOFF.md`).
 
-## What you should do — IMPORTANT
+## Run it
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+```bash
+npm install
+cp .env.example .env        # optional; sensible defaults work out of the box
+npm run dev                 # API on :8787, app on http://localhost:5173
+```
 
-**Read `project/The News v2.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+Sign-up codes and password-reset links are printed in the API log until `SMTP_URL` is set.
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+Production:
 
-## About the design files
+```bash
+npm run build               # typecheck + client build into dist/
+npm start                   # one Node process serves the API and the built app on $PORT
+```
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+Tests:
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+```bash
+npm test                    # domain + API tests (Vitest, in-memory SQLite)
+npm run build && npm run test:e2e   # full journey in an emulated iPhone (Playwright)
+```
 
-## Bundle contents
+If Playwright can't download browsers in your environment, point it at an existing Chromium with `CHROMIUM_PATH=/path/to/chrome`.
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `The News UI mockups` project files (HTML prototypes, assets, components)
+## What's in the app
+
+Every screen in the v2 design is built and wired to real data:
+
+| Design | Where |
+| --- | --- |
+| Logo system, signature gradient | `src/components/Brand.tsx`, `.grad-bg` in `src/styles.css`, app icons in `public/`, `/brand` page |
+| Live swipe feed, 07–13 card states | `src/screens/Feed.tsx`, `src/components/FeedCard.tsx` |
+| C1–C8 account screens | `src/screens/Account.tsx` (+ reset-password and OAuth return) |
+| 01–06, 04b, 04c onboarding | `src/screens/Launch.tsx`, `src/screens/Onboarding.tsx` |
+| F1 filters, F2 add countries, F3 places | `Feed.tsx` (`FilterSheet`), `src/screens/Places.tsx` |
+| L1–L6 loading and skeletons | `FeedSkeleton`, `ListSkeleton`, reader sheet, pull to refresh, `FindingLocal`, component states on `/brand` |
+| E1–E8 error and empty states | `Feed.tsx` (offline, didn't load, removed, nothing nearby), `LocationOff`, search no-results, `SessionExpired` in `App.tsx` |
+| 14–17 list, reader, profile, saved | `Feed.tsx`, `src/screens/Profile.tsx` |
+
+Brand rules from the design are kept: Epilogue Variable only (self-hosted via `@fontsource-variable/epilogue`), Hugeicons free stroke icons only (`@hugeicons/react`), Ink & Signal colours, and the drifting gradient behind every screen. On phones the app runs full-bleed and respects safe areas; on wider screens it renders inside the 390 × 844 device from the mockups.
+
+## How it works
+
+- **Client**: React + TypeScript + Vite, installable as a PWA (`public/manifest.webmanifest`, `public/sw.js` for offline shell and push).
+- **Server**: Express + SQLite (`better-sqlite3`), in `server/`. Schema migrations live in `server/db.ts`.
+- **Shared domain**: `shared/domain.ts` holds the taxonomy, the full ISO country list, coverage levels, and `matchesFilters`, the one filtering rule used by both the feed API and the client.
+
+### Accounts
+
+- Email sign-up with a 6-digit code (10-minute expiry, 30-second resend cooldown, 5 tries per code).
+- Passwords hashed with scrypt; sessions are random tokens stored hashed, sent as `httpOnly`, `SameSite=Lax` cookies, sliding 60-day expiry.
+- Three wrong passwords trigger a 15-minute pause (the exact copy from C4); rate limiting per IP on all auth routes.
+- Password reset by emailed link (30 minutes), which signs out every other session.
+- Sign in with Google and Apple are implemented and switch on when their env vars are set; until then the buttons explain that email is the way in.
+- Account deletion lives under Profile › About.
+
+### Feed and preferences
+
+- Preferences (topics, countries, coverage levels, places with per-place radius, filters, theme, notifications) are local-first and sync to the account with last-write-wins. If a session expires, reading continues and the E8 dialog offers to log back in.
+- Saves, likes and reading history work offline: changes queue locally and flush when you're back online or signed in, and anything saved while signed out merges into the account.
+- The day's queue stays stable while you read. It refreshes on pull-to-refresh, when filters change, or at launch after 30 minutes. Stories removed by the publisher become "no longer available" cards for readers who already had them.
+- Hyperlocal stories are matched by distance from each saved place; "widen to N km" and "show {city} stories" fix an empty neighbourhood.
+- Daily notification: web push at the reader's chosen local time, sent by the server once VAPID keys are configured.
+
+## Configuration
+
+See `.env.example`. The ones that matter for production:
+
+| Variable | Purpose |
+| --- | --- |
+| `APP_ORIGIN` | Public URL, used in emails and OAuth redirects |
+| `DATABASE_PATH` | SQLite file (put it on a persistent volume) |
+| `SMTP_URL`, `MAIL_FROM` | Verification and reset emails |
+| `GOOGLE_CLIENT_ID/SECRET` | Sign in with Google (redirect URI: `$APP_ORIGIN/api/auth/oauth/google/callback`) |
+| `APPLE_*` | Sign in with Apple (redirect URI: `$APP_ORIGIN/api/auth/oauth/apple/callback`) |
+| `VAPID_PUBLIC_KEY/PRIVATE_KEY` | Daily push notifications (`npx web-push generate-vapid-keys`) |
+| `ADMIN_TOKEN` | Enables the story ingest API |
+| `SEED_DEMO` | `1` re-stamps the bundled demo stories to today on boot; set `0` once real content flows in |
+| `GEOCODER=nominatim` | Falls back to OpenStreetMap search for places outside the built-in gazetteer |
+
+## Content
+
+The stories in `server/seed-data.ts` are the design's sample stories plus extra local, national, explainer and opinion stories so every filter has something to show. They are sample content, not real reporting. Feed real stories through the ingest API:
+
+```bash
+curl -X POST $APP_ORIGIN/api/admin/stories \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"stories":[{"id":"...","cat":"AI Models","topic":"AI Models","title":"...","summary":"...","source":"...","url":"https://...","publishedAt":"2026-09-24T08:00:00Z","level":"global","type":"news"}]}'
+
+curl -X DELETE $APP_ORIGIN/api/admin/stories/<id> -H "Authorization: Bearer $ADMIN_TOKEN"   # publisher removed it
+```
+
+`level` is one of `global | national | state | city | hyper`; local stories also take `country`, `region`, `city`, `area`, `lat`, `lon`.
+
+## Decisions to confirm
+
+- **Logo**: the design offers 1a "Nine" and 1b "Stack". Both are built (`LogoNine`, `LogoStack`); the app icon and favicon use Nine until you pick. Swap by editing `public/icon*.svg` and running `node scripts/render-icons.mjs`.
+- **Launch market**: sample places are in Bengaluru (as in the design), and the gazetteer in `server/geo.ts` also covers major cities in the other followed countries.
+- **Additions the design didn't draw** but production needs: a log-out row, account deletion, reset-password page, privacy and terms pages, per-place range screen, notification time setting and reading history. They reuse the design's components.
+- **Legal copy** on `/privacy` and `/terms` describes what the app actually stores, but it needs review before launch.
