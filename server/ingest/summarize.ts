@@ -50,7 +50,7 @@ const SYSTEM = `You are the editor of The News, a phone app that shows one story
 For each article you receive, decide whether it belongs in the app and, if it does, write the card.
 
 The app covers these topics: ${TOPICS.join(', ')}. For city and neighbourhood stories it also covers: Transit, Civic, Weather, Events, Food.
-Markets and business news belongs when it is about technology companies, AI, chips, startups, or funding (use AI Business, Big Tech, Startups or AI Hardware). Set relevant=false for sport, celebrity, lifestyle, horoscopes, deals and coupons, product listicles, sponsored posts, podcasts and newsletters, stock tips with no news, and anything that is not news.
+The app aims to carry every story an informed person needs today, worldwide: technology and AI first, and also world affairs (World), markets and the economy (Markets), science (Science) and health (Health). Business news about technology companies, AI, chips, startups or funding goes under AI Business, Big Tech, Startups or AI Hardware; other business and economic news goes under Markets. Set relevant=false for sport results, celebrity and entertainment gossip, lifestyle, horoscopes, recipes, deals and coupons, product listicles and buying guides, sponsored posts, podcasts and newsletters, stock tips with no news, and anything that is not news.
 
 Write:
 - title: a headline of at most ${TITLE_MAX} characters. Specific and plain: who did what, with the number if there is one. No clickbait, no question headlines, no outlet name, sentence case, no trailing full stop.
@@ -150,23 +150,37 @@ export function fitWords(text: string, max: number): string {
 
 // ---- Extractive fallback (no API key, or the model is unavailable) ----
 
-const RULES: [string, RegExp][] = [
-  ['AI Policy', /\b(regulat\w*|AI act|legislat\w*|senate|congress|parliament|ban(s|ned)?|lawsuit|antitrust|copyright|executive order|policy)\b/i],
-  ['AI Hardware', /\b(nvidia|gpu|chips?|semiconductor|tsmc|amd|intel|blackwell|data ?cent(er|re)s?|accelerator|wafer|fab)\b/i],
-  ['Quantum Computing', /\bquantum|qubits?\b/i],
-  ['Robotics', /\b(robot\w*|humanoid|drone|autonomous (vehicle|car)|self-driving|waymo)\b/i],
-  ['Cybersecurity', /\b(hack\w*|breach|ransomware|malware|vulnerabilit\w*|cyber\w*|phishing|zero-day|exploit)\b/i],
-  ['Space', /\b(nasa|spacex|rocket|orbit\w*|satellite|lunar|moon|mars|launch pad|starship|isro|esa)\b/i],
-  ['Climate Tech', /\b(climate|carbon|solar|battery|batteries|\bev\b|electric vehicle|renewable|emissions|grid|nuclear|fusion)\b/i],
-  ['Startups', /\b(startup|raises?|funding|series [a-e]|seed round|valuation|unicorn|venture|vc)\b/i],
-  ['AI Research', /\b(research(ers)?|paper|benchmark|study|scientists?|deepmind|arxiv)\b/i],
-  ['AI Models', /\b(gpt-?\d|claude|gemini|llama|model(s)?|llm|chatgpt|openai|anthropic|mistral|deepseek)\b/i],
-  ['AI Business', /\b(earnings|revenue|shares?|stock|ipo|acquisition|acquire[sd]?|deal|investors?|market cap|profit)\b/i],
-  ['AI Tools', /\b(app|feature|assistant|copilot|agent(s)?|plugin|tool(s)?|update)\b/i],
-  ['Big Tech', /\b(apple|google|alphabet|microsoft|meta|amazon|tesla|netflix|samsung|bytedance|tiktok|x corp)\b/i],
-  ['AI & Society', /\b(jobs|workers|education|students|misinformation|deepfake|privacy|ethic\w*)\b/i],
+/** Technology beats that stand on their own words. */
+const TECH_RULES: [string, RegExp][] = [
+  ['AI Hardware', /\b(nvidia|gpus?|chips?|chipmakers?|semiconductors?|tsmc|amd|intel|blackwell|data ?cent(er|re)s?|accelerators?|wafers?|foundr(y|ies))\b/i],
+  ['Quantum Computing', /\b(quantum|qubits?)\b/i],
+  ['Robotics', /\b(robot\w*|humanoids?|drones?|autonomous (vehicles?|cars?)|self-driving|waymo)\b/i],
+  ['Cybersecurity', /\b(hack(s|ed|ers?|ing)?|data breach|ransomware|malware|vulnerabilit(y|ies)|cyber\w*|phishing|zero-day|exploits?)\b/i],
+  ['Space', /\b(nasa|spacex|rockets?|orbit(al|ing)?|satellites?|lunar|moon landing|mars|launch pad|starship|isro|esa|astronauts?)\b/i],
+  ['Climate Tech', /\b(solar|batter(y|ies)|electric vehicles?|\bevs?\b|renewables?|clean energy|carbon capture|emissions|power grid|nuclear (power|reactor)|fusion)\b/i],
 ];
-const TECH = /\b(ai|a\.i\.|artificial intelligence|tech\w*|software|chip\w*|startup|robot\w*|quantum|cyber\w*|space|satellite|app|internet|digital|data|cloud|computer|nvidia|openai|apple|google|microsoft|meta|amazon|tesla|nasa|spacex|rockets?|orbit\w*|satellites?|moon|mars|robot\w*|drones?|quantum|hack\w*|ransomware|breach|malware|climate|carbon|solar|batter(y|ies)|electric vehicles?|semiconductors?|startups?)\b/i;
+/** Only when the story is about AI. */
+const AI = /\b(ai|a\.i\.|artificial intelligence|machine learning|llms?|chatgpt|openai|anthropic|gemini|claude|copilot|deepmind|generative|chatbots?|gpt-?\d)\b/i;
+const AI_RULES: [string, RegExp][] = [
+  ['AI Policy', /\b(regulat\w*|ai act|legislat\w*|senate|congress|parliament|bans?|banned|lawsuits?|antitrust|copyright|executive order|polic(y|ies))\b/i],
+  ['AI Research', /\b(research(ers)?|papers?|benchmarks?|study|scientists?|arxiv)\b/i],
+  ['AI Business', /\b(earnings|revenue|shares?|stocks?|ipo|acquisitions?|acquire[sd]?|deals?|investors?|market cap|profits?|valuation)\b/i],
+  ['AI & Society', /\b(jobs|workers|education|students|misinformation|deepfakes?|privacy|ethic\w*|copyright)\b/i],
+  ['AI Tools', /\b(apps?|features?|assistants?|agents?|plugins?|tools?|launch(es|ed)?|rolls? out)\b/i],
+];
+const COMPANY_RULES: [string, RegExp][] = [
+  ['Startups', /\b(startups?|raises?|raised|funding round|series [a-e]|seed round|unicorn|venture capital)\b/i],
+  ['Big Tech', /\b(apple|google|alphabet|microsoft|meta|amazon|tesla|netflix|samsung|bytedance|tiktok|x corp)\b/i],
+];
+/** The wider world. */
+const WORLD_RULES: [string, RegExp][] = [
+  ['Health', /\b(health|vaccin\w*|diseases?|outbreaks?|virus(es)?|hospitals?|world health organization|fda|drugs?|cancer|patients?|pandemic|medical|mental health|obesity|measles|malaria)\b/i],
+  ['Science', /\b(scientists?|researchers?|study finds|discover(y|ed)|species|fossils?|physics|astronom\w*|telescopes?|genomes?|dna|evolution|archaeolog\w*)\b/i],
+  ['Markets', /\b(stocks?|shares|markets?|index|dow|nasdaq|s&p|ftse|nikkei|sensex|nifty|federal reserve|the fed|central bank|inflation|interest rates?|bond yields?|oil prices?|currenc(y|ies)|recession|gdp|earnings|tariffs?)\b/i],
+  ['World', /\b(war|elections?|president|prime minister|ministers?|government|parliament|ceasefire|troops|military|protests?|refugees?|united nations|summit|sanctions|diplomat\w*|coup|earthquake|hurricane|typhoon|wildfires?|floods?|killed|attacks?)\b/i],
+];
+/** Never news for this app, whatever the desk. */
+const SKIP = /\b(horoscopes?|zodiac|recipes?|coupons?|promo codes?|deal of the day|best .{0,30} to buy|red carpet|celebrit(y|ies)|premier league|nfl|nba|fantasy football|match report|lottery)\b/i;
 
 const LOCAL_RULES: [string, RegExp][] = [
   ['Transit', /\b(metro|train|rail\w*|bus(es)?|tube|bart|muni|traffic|road|flyover|airport|commut\w*|station)\b/i],
@@ -176,17 +190,24 @@ const LOCAL_RULES: [string, RegExp][] = [
   ['Food', /\b(restaurant|cafe|café|food|dining|chef|bakery|street food)\b/i],
 ];
 
-export function classify(text: string, local = false): string | null {
-  if (local) for (const [topic, re] of LOCAL_RULES) if (re.test(text)) return topic;
-  for (const [topic, re] of RULES) if (re.test(text)) return topic;
-  return null;
+const first = (rules: [string, RegExp][], text: string) => rules.find(([, re]) => re.test(text))?.[0] ?? null;
+
+/** Topic from the story's own words; the desk's usual beat settles anything they don't. */
+export function classify(text: string, opts: { local?: boolean; beat?: string } = {}): string | null {
+  if (SKIP.test(text)) return null;
+  return (opts.local ? first(LOCAL_RULES, text) : null)
+    ?? first(TECH_RULES, text)
+    ?? (AI.test(text) ? first(AI_RULES, text) ?? 'AI Models' : null)
+    ?? first(COMPANY_RULES, text)
+    ?? first(WORLD_RULES, text)
+    ?? opts.beat
+    ?? null;
 }
 
 export function extractive(c: Candidate): Draft | null {
   const blob = `${c.title}. ${c.excerpt}`;
   const local = c.source.level === 'city';
-  if (!local && !TECH.test(blob)) return null;
-  const topic = classify(blob, local);
+  const topic = classify(blob, { local, beat: c.source.beat });
   if (!topic) return null;
   const source = (c.article || c.excerpt).replace(/\s+/g, ' ').trim();
   // A teaser that just repeats the headline isn't a summary.

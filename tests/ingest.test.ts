@@ -4,7 +4,8 @@ import { windowStories, getStory } from '../server/stories';
 import { parseFeed, normalizeUrl, titleKey, similarity, toText } from '../server/ingest/rss';
 import { cleanMarkdown } from '../server/ingest/reader';
 import { runCycle, newsEvents, isDue, rankFor } from '../server/ingest/pipeline';
-import { extractive, fitWords, clampTitle, finalise, TITLE_MAX, type Candidate, type Draft } from '../server/ingest/summarize';
+import { parseToolText, rpcReply, outletFor, exaSearch } from '../server/ingest/exa';
+import { classify, extractive, fitWords, clampTitle, finalise, TITLE_MAX, type Candidate, type Draft } from '../server/ingest/summarize';
 import type { Source } from '../server/ingest/sources';
 import { SUMMARY_MAX_WORDS, wordCount } from '../shared/domain';
 
@@ -177,5 +178,68 @@ describe('ingestion cycle', () => {
   it('ranks by importance', () => {
     expect(rankFor(10)).toBeLessThan(rankFor(5));
     expect(rankFor(99)).toBe(20);
+  });
+});
+
+describe('world coverage and agent-reach Exa channel', () => {
+  it('classifies the wider world, uses the desk beat as a tiebreak, and skips non-news', () => {
+    expect(classify('Ceasefire talks resume as troops pull back from the border')).toBe('World');
+    expect(classify('Stocks slide as the Federal Reserve signals higher interest rates')).toBe('Markets');
+    expect(classify('WHO warns of measles outbreak across three countries')).toBe('Health');
+    expect(classify('Scientists discover a new species of deep-sea octopus')).toBe('Science');
+    expect(classify('OpenAI launches a new agent tool for spreadsheets')).toBe('AI Tools');
+    expect(classify('Nvidia unveils its next data centre chip')).toBe('AI Hardware');
+    expect(classify('Local council opens a new library branch', { beat: 'World' })).toBe('World');
+    expect(classify('Your weekly horoscope: what the stars say', { beat: 'World' })).toBeNull();
+  });
+
+  it('parses both shapes of the Exa MCP tool output', () => {
+    const json = JSON.stringify({ results: [{ title: 'A', url: 'https://reuters.com/a', publishedDate: '2026-09-24T10:00:00Z', text: 'Body A' }] });
+    expect(parseToolText(json)).toEqual([{ title: 'A', url: 'https://reuters.com/a', publishedDate: '2026-09-24T10:00:00Z', text: 'Body A' }]);
+    const text = 'Title: Chip exports rise\nURL: https://www.ft.com/content/x\nPublished Date: 2026-09-24\nAuthor: Jane\nText: Exports of advanced chips rose.\n\nTitle: Second\nURL: https://apnews.com/b\nText: Two.';
+    const r = parseToolText(text);
+    expect(r).toHaveLength(2);
+    expect(r[0]).toMatchObject({ title: 'Chip exports rise', url: 'https://www.ft.com/content/x', publishedDate: '2026-09-24', text: 'Exports of advanced chips rose.' });
+  });
+
+  it('reads JSON-RPC replies sent as JSON or as an event stream', () => {
+    expect(rpcReply('{"jsonrpc":"2.0","id":2,"result":{"ok":true}}', 2)).toMatchObject({ result: { ok: true } });
+    expect(rpcReply('event: message\ndata: {"jsonrpc":"2.0","id":1,"result":{}}\n\n', 1)).toMatchObject({ result: {} });
+    expect(rpcReply('data: {"jsonrpc":"2.0","id":9}', 1)).toBeNull();
+  });
+
+  it('names outlets from URLs', () => {
+    expect(outletFor('https://www.reuters.com/world/x')).toBe('Reuters');
+    expect(outletFor('https://edition.bbc.co.uk/news')).toBe('BBC');
+    expect(outletFor('https://www.restofworld.org/2026/x')).toBe('Restofworld');
+  });
+
+  it('speaks MCP to the Exa endpoint: initialize, initialized, tools/call web_search_exa', async () => {
+    const calls: { method: string; session?: string | null }[] = [];
+    const fake = (async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      calls.push({ method: body.method, session: (init.headers as Record<string, string>)['mcp-session-id'] ?? null });
+      if (body.method === 'initialize') return new Response('event: message\ndata: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26"}}\n\n', { headers: { 'mcp-session-id': 'sess-1' } });
+      if (body.method === 'notifications/initialized') return new Response(null, { status: 202 });
+      expect(body.params.name).toBe('web_search_exa');
+      const text = 'Title: Ceasefire agreed\nURL: https://apnews.com/c\nPublished Date: 2026-09-24T09:00:00Z\nText: Both sides agreed to a ceasefire.';
+      return new Response(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ type: 'text', text }] } }));
+    }) as unknown as typeof fetch;
+    const items = await exaSearch('top world news today', '2026-09-23T00:00:00Z', fake);
+    expect(calls.map(c => c.method)).toEqual(['initialize', 'notifications/initialized', 'tools/call']);
+    expect(calls[2].session).toBe('sess-1');
+    expect(items).toEqual([{ title: 'Ceasefire agreed', url: 'https://apnews.com/c', excerpt: 'Both sides agreed to a ceasefire.', publishedAt: '2026-09-24T09:00:00.000Z', outlet: 'Associated Press' }]);
+  });
+
+  it('feeds Exa results into the cycle like any other source', async () => {
+    const db = openDb(':memory:');
+    const exaSrc: Source = { id: 'exa-world', name: 'Exa', url: 'exa:top world news', kind: 'exa', query: 'top world news', level: 'global', everyMin: 30, beat: 'World' };
+    const r = await runCycle(db, {
+      sources: [exaSrc], now: () => now, read: async () => null, write: async (c: Candidate) => extractive(c),
+      search: async () => [{ title: 'Ceasefire agreed in border conflict', url: 'https://apnews.com/c', excerpt: 'Both governments agreed to a ceasefire on Wednesday after talks brokered by the United Nations ended a week of fighting along the border.', publishedAt: new Date(now - 30 * 60_000).toISOString(), outlet: 'Associated Press' }],
+    });
+    expect(r.published).toHaveLength(1);
+    const s = getStory(db, r.published[0])!;
+    expect(s).toMatchObject({ topic: 'World', source: 'Associated Press' });
   });
 });

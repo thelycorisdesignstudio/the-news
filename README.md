@@ -112,16 +112,23 @@ See `.env.example`. The ones that matter for production:
 | `INGEST_MAX_PER_CYCLE` | Most articles written up per one-minute cycle (default 40) |
 | `NEWS_FEEDS` | Extra feeds: `Name\|https://…/feed,https://…` |
 | `READER`, `JINA_API_KEY` | Full-text reading via Jina Reader; `READER=0` disables it |
+| `EXA`, `EXA_API_KEY`, `EXA_MCP_URL` | Exa news search: on by default through the free MCP endpoint; a key switches to the Exa API; `EXA=0` turns it off |
 | `AGENT_REACH_BIN` | Path to the agent-reach CLI; its `doctor --json` report joins `/api/admin/sources` |
 | `GEOCODER=nominatim` | Falls back to OpenStreetMap search for places outside the built-in gazetteer |
 
 ## Live news
 
-`server/ingest/` polls 30 public feeds: Yahoo Finance, CNBC, MarketWatch, TechCrunch, The Verge, Ars Technica, WIRED, MIT Technology Review, VentureBeat, BBC, The Guardian, NYT, Hacker News, security, robotics, quantum and space desks, Google News wire searches for the US, UK, India and Singapore, and city desks for Bengaluru, Mumbai, London and San Francisco. It works the way [agent-reach](https://github.com/Panniantong/agent-reach) does: RSS for discovery, and Jina Reader (`r.jina.ai`) for the full text when a feed only carries a teaser.
+`server/ingest/` gathers news through the channels [agent-reach](https://github.com/Panniantong/agent-reach) sets up for agents:
+
+- **RSS** (agent-reach's web/RSS channel): 44 feeds. They cover world desks (BBC, Al Jazeera, The Guardian, NPR, DW, France 24, NHK, SCMP, The Straits Times, ABC), wires via Google News (Reuters, AP, Bloomberg), markets (Yahoo Finance, WSJ, CNBC, MarketWatch, The Economic Times), technology (TechCrunch, The Verge, Ars Technica, WIRED, MIT Technology Review, VentureBeat, NYT, Hacker News), science and health (Nature, ScienceDaily, NASA, WHO, STAT, BBC Health), security, robotics and quantum desks, and city desks for Bengaluru, Mumbai, London and San Francisco.
+- **Exa search** (agent-reach's search channel): eight standing news searches (AI, chips, AI policy, startups, world, markets, science, health) catch what no feed carries. It speaks MCP to Exa's free endpoint (`mcp.exa.ai`, the one agent-reach registers with mcporter), so no key is needed; with `EXA_API_KEY` it uses the Exa API instead.
+- **Jina Reader** (agent-reach's web channel): full article text when a feed only carries a teaser.
+
+`scripts/setup-agent-reach.sh` installs the agent-reach CLI itself. With `AGENT_REACH_BIN` set, its `doctor --json` report shows up in `/api/admin/sources`. Its Twitter, Reddit and YouTube channels need a logged-in session on the machine; they're not used automatically.
 
 - Each feed is polled on its own interval with conditional GET (`ETag`/`Last-Modified`). A failing feed backs off exponentially.
 - The same article from several feeds is written up once. The same story from several outlets folds into one card, which moves up, and becomes breaking when three outlets carry it within three hours.
-- Off-topic items (sport, lifestyle, deals) are skipped. Summaries are held to 45 words and headlines to 90 characters whatever the writer returns.
+- Topics run from AI and technology to World, Markets, Science and Health. Sport results, celebrity gossip, lifestyle, horoscopes and deals are skipped. Summaries are held to 45 words and headlines to 90 characters whatever the writer returns.
 - Open apps get new stories over `GET /api/stream` (server-sent events). New stories join the end of the reader's queue, so the card on screen never moves.
 
 `GET /api/admin/sources` shows per-feed health, and `POST /api/admin/ingest` runs a cycle now (both need `ADMIN_TOKEN`).

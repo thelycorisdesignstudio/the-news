@@ -13,6 +13,14 @@ export interface Source {
   region?: string;
   /** Minutes between polls. Wires and finance desks move fastest. */
   everyMin: number;
+  /**
+   * How it's read: 'rss' (default) polls the feed at `url`; 'exa' runs `query` through Exa news search,
+   * the web-wide search agent-reach sets up (mcporter + Exa MCP, or the Exa API directly).
+   */
+  kind?: 'rss' | 'exa';
+  query?: string;
+  /** The desk's usual topic, used when a story's own words don't settle it. */
+  beat?: string;
 }
 
 const gnews = (q: string, gl: string, hl = 'en') =>
@@ -46,6 +54,42 @@ export const SOURCES: Source[] = [
   { id: 'quantum-insider', name: 'The Quantum Insider', url: 'https://thequantuminsider.com/feed/', level: 'global', everyMin: 30 },
   { id: 'space', name: 'Space.com', url: 'https://www.space.com/feeds/all', level: 'global', everyMin: 15 },
   { id: 'tc-climate', name: 'TechCrunch', url: 'https://techcrunch.com/category/climate/feed/', level: 'global', everyMin: 30 },
+  // World desks
+  { id: 'bbc-world', name: 'BBC', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', country: 'GB', level: 'global', everyMin: 5, beat: 'World' },
+  { id: 'aljazeera', name: 'Al Jazeera', url: 'https://www.aljazeera.com/xml/rss/all.xml', level: 'global', everyMin: 5, beat: 'World' },
+  { id: 'guardian-world', name: 'The Guardian', url: 'https://www.theguardian.com/world/rss', country: 'GB', level: 'global', everyMin: 10, beat: 'World' },
+  { id: 'npr-world', name: 'NPR', url: 'https://feeds.npr.org/1004/rss.xml', country: 'US', level: 'global', everyMin: 10, beat: 'World' },
+  { id: 'dw', name: 'DW', url: 'https://rss.dw.com/rdf/rss-en-all', country: 'DE', level: 'global', everyMin: 10, beat: 'World' },
+  { id: 'france24', name: 'France 24', url: 'https://www.france24.com/en/rss', country: 'FR', level: 'global', everyMin: 10, beat: 'World' },
+  { id: 'nhk', name: 'NHK World', url: 'https://www3.nhk.or.jp/rss/news/cat0.xml', country: 'JP', level: 'global', everyMin: 15, beat: 'World' },
+  { id: 'scmp', name: 'South China Morning Post', url: 'https://www.scmp.com/rss/91/feed', country: 'HK', level: 'global', everyMin: 15, beat: 'World' },
+  { id: 'straits-times', name: 'The Straits Times', url: 'https://www.straitstimes.com/news/world/rss.xml', country: 'SG', level: 'global', everyMin: 15, beat: 'World' },
+  { id: 'abc-au', name: 'ABC News', url: 'https://www.abc.net.au/news/feed/2942460/rss.xml', country: 'AU', level: 'national', everyMin: 15, beat: 'World' },
+  { id: 'gn-reuters', name: 'Google News', url: gnews('site:reuters.com', 'US'), level: 'global', everyMin: 10, beat: 'World' },
+  { id: 'gn-ap', name: 'Google News', url: gnews('site:apnews.com', 'US'), level: 'global', everyMin: 10, beat: 'World' },
+  // Markets
+  { id: 'wsj-markets', name: 'The Wall Street Journal', url: 'https://feeds.content.dowjones.io/public/rss/RSSMarketsMain', country: 'US', level: 'global', everyMin: 10, beat: 'Markets' },
+  { id: 'cnbc-markets', name: 'CNBC', url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', country: 'US', level: 'global', everyMin: 5, beat: 'Markets' },
+  { id: 'et-markets', name: 'The Economic Times', url: 'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms', country: 'IN', level: 'national', everyMin: 10, beat: 'Markets' },
+  { id: 'gn-bloomberg', name: 'Google News', url: gnews('site:bloomberg.com markets', 'US'), level: 'global', everyMin: 15, beat: 'Markets' },
+  // Science and health
+  { id: 'nature', name: 'Nature', url: 'https://www.nature.com/nature.rss', level: 'global', everyMin: 30, beat: 'Science' },
+  { id: 'sciencedaily', name: 'ScienceDaily', url: 'https://www.sciencedaily.com/rss/top/science.xml', level: 'global', everyMin: 30, beat: 'Science' },
+  { id: 'nasa', name: 'NASA', url: 'https://www.nasa.gov/news-release/feed/', country: 'US', level: 'global', everyMin: 30, beat: 'Space' },
+  { id: 'who', name: 'World Health Organization', url: 'https://www.who.int/rss-feeds/news-english.xml', level: 'global', everyMin: 30, beat: 'Health' },
+  { id: 'stat', name: 'STAT', url: 'https://www.statnews.com/feed/', country: 'US', level: 'global', everyMin: 20, beat: 'Health' },
+  { id: 'bbc-health', name: 'BBC', url: 'https://feeds.bbci.co.uk/news/health/rss.xml', country: 'GB', level: 'global', everyMin: 20, beat: 'Health' },
+  // Exa news search (agent-reach's search channel): catches what no feed carries. Needs EXA_API_KEY or mcporter + Exa.
+  ...[
+    ['exa-ai', 'artificial intelligence news today', 'AI Models'],
+    ['exa-chips', 'semiconductor and AI chip industry news', 'AI Hardware'],
+    ['exa-policy', 'AI regulation and policy news', 'AI Policy'],
+    ['exa-startups', 'startup funding rounds news', 'Startups'],
+    ['exa-world', 'top world news today', 'World'],
+    ['exa-markets', 'stock market news today', 'Markets'],
+    ['exa-science', 'major science discovery news', 'Science'],
+    ['exa-health', 'global health news today', 'Health'],
+  ].map(([id, query, beat]): Source => ({ id, name: 'Exa', url: `exa:${query}`, kind: 'exa', query, level: 'global', everyMin: 30, beat })),
   // Wire coverage via Google News (Reuters, AP, Bloomberg headlines surface here)
   { id: 'gn-ai-us', name: 'Google News', url: gnews('artificial intelligence', 'US'), country: 'US', level: 'national', everyMin: 10 },
   { id: 'gn-ai-gb', name: 'Google News', url: gnews('artificial intelligence', 'GB'), country: 'GB', level: 'national', everyMin: 15 },

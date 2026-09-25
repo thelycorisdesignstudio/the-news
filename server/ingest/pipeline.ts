@@ -9,6 +9,7 @@ import { SOURCES, extraSources, type Source } from './sources';
 import { normalizeUrl, parseFeed, similarity, stripOutletSuffix, titleKey, type FeedItem } from './rss';
 import { httpGet, readArticle, type FetchResult } from './reader';
 import { writeUp, type Candidate, type Draft } from './summarize';
+import { exaSearch } from './exa';
 
 /** Fires `stories` with { added, ids, at } whenever a cycle publishes new cards. The SSE stream listens. */
 export const newsEvents = new EventEmitter();
@@ -19,6 +20,8 @@ export interface IngestDeps {
   fetchFeed?: (url: string, etag?: string | null, lastModified?: string | null) => Promise<FetchResult>;
   read?: (url: string) => Promise<string | null>;
   write?: (c: Candidate) => Promise<Draft | null>;
+  /** Exa news search (agent-reach's search channel). */
+  search?: (query: string, sinceIso: string) => Promise<FeedItem[]>;
   now?: () => number;
   /** Poll every feed now, ignoring intervals and backoff (the admin "ingest now" button). */
   force?: boolean;
@@ -43,7 +46,7 @@ const MAX_ATTEMPTS = 3;
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 
 export function allSources(): Source[] {
-  return [...SOURCES, ...extraSources(config.news.extraFeeds)];
+  return [...SOURCES, ...extraSources(config.news.extraFeeds)].filter(s => s.kind !== 'exa' || config.news.exa);
 }
 
 async function pool<T>(items: T[], n: number, fn: (t: T) => Promise<void>) {
@@ -73,6 +76,7 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
   const fetchFeed = deps.fetchFeed ?? ((url, etag, lm) => httpGet(url, { etag, lastModified: lm }));
   const read = deps.read ?? readArticle;
   const write = deps.write ?? writeUp;
+  const search = deps.search ?? ((q: string, since: string) => exaSearch(q, since));
   const byId = new Map(sources.map(s => [s.id, s]));
   const report: CycleReport = { fetched: 0, notModified: 0, failed: [], discovered: 0, published: [], merged: 0, skipped: 0 };
   const windowStart = now() - config.feedWindowHours * 3600_000;
@@ -85,13 +89,19 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
   await pool(due, 6, async src => {
     const st = states.get(src.id);
     try {
-      const res = await fetchFeed(src.url, st?.etag, st?.last_modified);
-      if (res.status === 304) {
-        report.notModified++;
-        saveState(db, src.id, { ok: true, now: now(), etag: st?.etag, lastModified: st?.last_modified, items: 0 });
-        return;
+      let items: FeedItem[];
+      let res: FetchResult = { status: 200, body: '' };
+      if (src.kind === 'exa') {
+        items = await search(src.query ?? '', new Date(windowStart).toISOString());
+      } else {
+        res = await fetchFeed(src.url, st?.etag, st?.last_modified);
+        if (res.status === 304) {
+          report.notModified++;
+          saveState(db, src.id, { ok: true, now: now(), etag: st?.etag, lastModified: st?.last_modified, items: 0 });
+          return;
+        }
+        items = parseFeed(res.body);
       }
-      const items = parseFeed(res.body);
       report.fetched++;
       let fresh = 0;
       db.transaction(() => {

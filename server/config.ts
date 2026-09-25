@@ -34,6 +34,10 @@ export const config = {
     readerUrl: (env.READER_URL || 'https://r.jina.ai/').replace(/\/?$/, '/'),
     readerKey: env.JINA_API_KEY || '',
     reader: env.READER !== '0',
+    /** Exa news search (agent-reach's search channel): the free MCP endpoint by default, the API with a key. */
+    exa: env.EXA !== '0',
+    exaKey: env.EXA_API_KEY || '',
+    exaMcpUrl: env.EXA_MCP_URL || 'https://mcp.exa.ai/mcp',
     /** Optional: path to the agent-reach CLI; its `doctor --json` report is merged into /api/admin/sources. */
     agentReachBin: env.AGENT_REACH_BIN || '',
   },

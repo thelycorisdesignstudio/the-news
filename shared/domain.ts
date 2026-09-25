@@ -100,6 +100,8 @@ export const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).le
 export const TOPICS = [
   'AI Models', 'AI Policy', 'AI Research', 'AI Tools', 'AI Business', 'AI & Society', 'Quantum Computing',
   'Robotics', 'Big Tech', 'Startups', 'AI Hardware', 'Cybersecurity', 'Climate Tech', 'Space',
+  // The wider world, so the day's biggest stories are never missing.
+  'World', 'Markets', 'Science', 'Health',
 ] as const;
 
 export const LOCAL_TOPICS = ['Transit', 'Civic', 'Weather', 'Events', 'Food'] as const;

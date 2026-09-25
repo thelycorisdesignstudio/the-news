@@ -14,7 +14,7 @@ export function Splash() {
   );
 }
 
-const LANDING_CATS = ['AI Models', 'AI Policy', 'Robotics', 'Quantum Computing', 'Big Tech', 'Startups', 'Cybersecurity', 'Space'];
+const LANDING_CATS = ['AI Models', 'AI Policy', 'Robotics', 'Big Tech', 'Startups', 'Cybersecurity', 'Space', 'World', 'Markets', 'Science', 'Health'];
 const FEATURES = [
   { n: '01', t: 'nine seconds a story.', d: "Every story is edited down to what happened, why it matters and who reported it. A quiet timer shows when you've had enough time." },
   { n: '02', t: "swipe, don't scroll.", d: 'One full-screen card at a time. Swipe up for the next story, down to go back. No endless list, no autoplay.' },
