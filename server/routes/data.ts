@@ -51,9 +51,10 @@ function parse<T>(schema: z.ZodType<T>, body: unknown): T {
   return r.data;
 }
 
-function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = []): Story[] {
+function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [], max = config.feedMax): Story[] {
   const keepSet = new Set(keep);
   const out: Story[] = [];
+  let fresh = 0;
   for (const s of windowStories(db, config.feedWindowHours)) {
     if (s.removed) {
       if (keepSet.has(s.id)) out.push({ ...s, summary: '', title: '', removed: true });
@@ -61,7 +62,11 @@ function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [])
     }
     const near = s.level === 'hyper' ? nearestPlace(s, places) : null;
     const story = near ? { ...s, distanceKm: Math.round(near.km * 10) / 10 } : s;
-    if (matchesFilters(story, filters, places)) out.push(story);
+    if (!matchesFilters(story, filters, places)) continue;
+    // The queue is capped, but stories already in the reader's queue always come back.
+    if (fresh >= max && !keepSet.has(s.id)) continue;
+    if (!keepSet.has(s.id)) fresh++;
+    out.push(story);
   }
   return out;
 }

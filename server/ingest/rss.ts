@@ -129,7 +129,13 @@ export function similarity(a: string, b: string): number {
   const A = new Set(a.split(' ')), B = new Set(b.split(' '));
   let inter = 0;
   for (const w of A) if (B.has(w)) inter++;
-  return inter / (A.size + B.size - inter);
+  const score = inter / (A.size + B.size - inter);
+  // Figures tell stories apart ("rates held at 4.5%" today, "at 4.25%" next month): when both headlines
+  // carry numbers and none match, only a near-identical headline still counts as the same story.
+  const nums = (S: Set<string>) => [...S].filter(w => /\d/.test(w));
+  const na = nums(A), nb = nums(B);
+  if (na.length && nb.length && !na.some(n => B.has(n))) return score >= 0.85 ? score : score * 0.5;
+  return score;
 }
 
 /** Aggregator titles end in " - Outlet"; the card shows the outlet separately. */

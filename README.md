@@ -123,6 +123,8 @@ See `.env.example`. The ones that matter for production:
 | `INGEST_MAX_PER_CYCLE` | Most articles written up per one-minute cycle (default 40) |
 | `NEWS_FEEDS` | Extra feeds: `Name\|https://…/feed,https://…` |
 | `READER`, `JINA_API_KEY` | Full-text reading via Jina Reader; `READER=0` disables it |
+| `FEED_MAX` | Stories in a reader's queue (default 60): fresh breaking news first, then rank with age pulling older stories down |
+| `RETENTION_DAYS` | Stories nobody saved or read are removed after this many days (default 30) |
 | `EXA`, `EXA_API_KEY`, `EXA_MCP_URL` | Exa news search: on by default through the free MCP endpoint; a key switches to the Exa API; `EXA=0` turns it off |
 | `AGENT_REACH_BIN` | Path to the agent-reach CLI; its `doctor --json` report joins `/api/admin/sources` |
 | `GEOCODER=nominatim` | Falls back to OpenStreetMap search for places outside the built-in gazetteer |
@@ -140,6 +142,8 @@ See `.env.example`. The ones that matter for production:
 - Each feed is polled on its own interval with conditional GET (`ETag`/`Last-Modified`). A failing feed backs off exponentially.
 - The same article from several feeds is written up once. The same story from several outlets folds into one card, which moves up, and becomes breaking when three outlets carry it within three hours.
 - Topics run from AI and technology to World, Markets, Science and Health. Sport results, celebrity gossip, lifestyle, horoscopes and deals are skipped. Summaries are held to 45 words and headlines to 90 characters whatever the writer returns.
+- Jina Reader is held under its free-tier limit (about 18 reads a minute; more with `JINA_API_KEY`), and Google News redirect links are never sent to it.
+- At volume (61 sources × 30 fresh items) a cold start's 1,800 articles clear in about 16 one-minute cycles; the feed stays capped at `FEED_MAX`.
 - Open apps get new stories over `GET /api/stream` (server-sent events). New stories join the end of the reader's queue, so the card on screen never moves.
 
 `GET /api/admin/sources` shows per-feed health, and `POST /api/admin/ingest` runs a cycle now (both need `ADMIN_TOKEN`).

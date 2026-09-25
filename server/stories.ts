@@ -46,12 +46,37 @@ export function removeStory(db: DB, id: string) {
   return db.prepare('UPDATE stories SET removed = 1 WHERE id = ?').run(id).changes > 0;
 }
 
-/** Stories inside the daily window, editorial order: breaking first, then rank, then newest. */
+/** Hours of age that cost as much as one editorial rank step: fresh stories rise, yesterday's sink. */
+const AGE_WEIGHT = 3;
+/** Breaking news leads the queue while it's still breaking. */
+const BREAKING_HOURS = 6;
+
+/**
+ * Stories inside the daily window, in editorial order: fresh breaking news first, then by rank with age
+ * pulling older stories down, so a live feed of hundreds of stories still opens on what matters now.
+ */
 export function windowStories(db: DB, windowHours: number, now = Date.now()): Story[] {
   const since = new Date(now - windowHours * 3600_000).toISOString();
-  const rows = db.prepare(`SELECT * FROM stories WHERE published_at >= ?
-    ORDER BY (type = 'breaking') DESC, rank ASC, published_at DESC`).all(since) as Row[];
-  return rows.map(r => rowToStory(r));
+  const rows = db.prepare('SELECT * FROM stories WHERE published_at >= ?').all(since) as Row[];
+  const score = (r: Row) => {
+    const hours = Math.max(0, (now - Date.parse(r.published_at)) / 3600_000);
+    const breaking = r.type === 'breaking' && hours < BREAKING_HOURS;
+    return (breaking ? -1000 : 0) + r.rank + hours * AGE_WEIGHT;
+  };
+  return rows
+    .map(r => ({ r, k: score(r) }))
+    .sort((a, b) => a.k - b.k || b.r.published_at.localeCompare(a.r.published_at))
+    .map(({ r }) => rowToStory(r));
+}
+
+/**
+ * Keeps the database to what readers can still reach: stories older than `days` go unless someone saved
+ * them or has them in their reading history. Ingest bookkeeping older than that goes too.
+ */
+export function pruneStories(db: DB, days: number, now = Date.now()) {
+  const before = new Date(now - days * 86400_000).toISOString();
+  return db.prepare(`DELETE FROM stories WHERE published_at < ?
+    AND id NOT IN (SELECT story_id FROM saves) AND id NOT IN (SELECT story_id FROM history)`).run(before).changes;
 }
 
 export function getStory(db: DB, id: string): Story | null {

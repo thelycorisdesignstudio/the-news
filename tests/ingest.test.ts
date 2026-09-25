@@ -243,3 +243,70 @@ describe('world coverage and agent-reach Exa channel', () => {
     expect(s).toMatchObject({ topic: 'World', source: 'Associated Press' });
   });
 });
+
+describe('at production volume', () => {
+  it('ranks fresh stories up, keeps fresh breaking news first, and prunes only unreferenced old stories', async () => {
+    const { windowStories, upsertStories, pruneStories } = await import('../server/stories');
+    const db = openDb(':memory:');
+    const at = (h: number) => new Date(now - h * 3600_000).toISOString();
+    const base = { cat: 'World', topic: 'World', summary: 's', source: 'X', url: 'https://x/1', level: 'global' as const, type: 'news' as const };
+    upsertStories(db, [
+      { ...base, id: 'old-important', title: 'a', publishedAt: at(30), rank: 20 },
+      { ...base, id: 'fresh-ordinary', title: 'b', publishedAt: at(1), rank: 60 },
+      { ...base, id: 'fresh-breaking', title: 'c', publishedAt: at(2), rank: 80, type: 'breaking' },
+      { ...base, id: 'stale-breaking', title: 'd', publishedAt: at(20), rank: 80, type: 'breaking' },
+    ]);
+    expect(windowStories(db, 36, now).map(s => s.id)).toEqual(['fresh-breaking', 'fresh-ordinary', 'old-important', 'stale-breaking']);
+
+    upsertStories(db, [
+      { ...base, id: 'ancient', title: 'e', publishedAt: at(24 * 40) },
+      { ...base, id: 'ancient-saved', title: 'f', publishedAt: at(24 * 40) },
+    ]);
+    db.prepare("INSERT INTO users (id, name, email, verified, created_at) VALUES ('u', 'U', 'u@x.co', 1, '')").run();
+    db.prepare("INSERT INTO saves (user_id, story_id, created_at) VALUES ('u', 'ancient-saved', 0)").run();
+    expect(pruneStories(db, 30, now)).toBe(1);
+    expect(db.prepare("SELECT id FROM stories WHERE id LIKE 'ancient%'").all()).toEqual([{ id: 'ancient-saved' }]);
+  });
+
+  it('skips unreadable aggregator links in the reader', async () => {
+    const { readArticle } = await import('../server/ingest/reader');
+    expect(await readArticle('https://news.google.com/rss/articles/abc')).toBeNull();
+  });
+
+  it('runs 61 sources × 30 items through dedupe, write-up and the capped feed quickly', async () => {
+    const db = openDb(':memory:');
+    const words = ['ceasefire', 'nvidia', 'inflation', 'vaccine', 'rocket', 'startup', 'quantum', 'election', 'robot', 'ransomware'];
+    const sources: Source[] = Array.from({ length: 61 }, (_, i) => src(`s${i}`));
+    const feedsBySource = new Map(sources.map((s, i) => [s.url, RSS(Array.from({ length: 30 }, (_, j) => {
+      const w = words[(i + j) % words.length];
+      // Every story appears at three outlets, so dedupe has real work to do.
+      const story = (i * 30 + j) % 600;
+      return { t: `${w} story ${story} ${w} headline number ${story}`, l: `https://outlet${i}.test/${story}`, d: `${LONG} Topic ${w} item ${story}.`, m: 5 + (j % 50) };
+    }))]));
+    const t0 = performance.now();
+    const r = await runCycle(db, {
+      sources, now: () => now, read: async () => null, write: async (c: Candidate) => extractive(c),
+      fetchFeed: async (url: string) => ({ status: 200, body: feedsBySource.get(url)! }),
+    });
+    const ms = performance.now() - t0;
+    expect(r.fetched).toBe(61);
+    expect(r.discovered).toBe(61 * 30);
+    expect(r.published.length).toBeGreaterThan(0);
+    expect(r.published.length).toBeLessThanOrEqual(40); // the per-cycle write budget
+    expect(ms).toBeLessThan(5000);
+
+    const { createApp } = await import('../server/app');
+    const request = (await import('supertest')).default;
+    const app = createApp({ db, mail: async () => {} });
+    const feed = await request(app).post('/api/feed').send({ filters: { cov: [], cty: [], plc: [], top: [], typ: [] } }).expect(200);
+    expect(feed.body.stories.length).toBeLessThanOrEqual(60);
+    expect(new Set(feed.body.stories.map((s: { id: string }) => s.id)).size).toBe(feed.body.stories.length);
+  });
+});
+
+describe('dedupe keeps different stories apart', () => {
+  it('does not merge headlines whose figures differ', () => {
+    expect(similarity(titleKey('Fed holds interest rates at 4.5% as inflation cools'), titleKey('Fed holds interest rates at 4.25% as inflation cools'))).toBeLessThan(0.55);
+    expect(similarity(titleKey('Nvidia revenue jumps 60% on AI chip demand'), titleKey('Nvidia revenue jumps 60% as AI chip demand soars'))).toBeGreaterThanOrEqual(0.55);
+  });
+});

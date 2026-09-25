@@ -64,5 +64,9 @@ export const config = {
   vapid: { publicKey: env.VAPID_PUBLIC_KEY || '', privateKey: env.VAPID_PRIVATE_KEY || '', subject: env.VAPID_SUBJECT || 'mailto:hello@thenews.app' },
   /** How far back the daily queue reaches. */
   feedWindowHours: Number(env.FEED_WINDOW_HOURS || 36),
+  /** The day's queue: the best of the window, not all of it. */
+  feedMax: Math.max(10, Number(env.FEED_MAX || 60)),
+  /** Stories nobody saved or read are removed after this many days. */
+  retentionDays: Math.max(2, Number(env.RETENTION_DAYS || 30)),
   sessionDays: 60,
 };

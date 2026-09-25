@@ -31,8 +31,25 @@ export async function httpGet(url: string, opts: { etag?: string | null; lastMod
  * teaser, so the write-up is grounded in the article rather than the teaser. Returns null on any failure;
  * the pipeline then writes from the feed excerpt alone.
  */
+/**
+ * Jina's free tier allows about 20 reads a minute without a key; stay under it. With JINA_API_KEY the
+ * limit is far higher, so the budget grows with it.
+ */
+const readsPerMinute = () => (config.news.readerKey ? 200 : 18);
+let windowStart = 0;
+let readsInWindow = 0;
+function takeReadBudget(now = Date.now()) {
+  if (now - windowStart >= 60_000) { windowStart = now; readsInWindow = 0; }
+  if (readsInWindow >= readsPerMinute()) return false;
+  readsInWindow++;
+  return true;
+}
+
+/** Aggregator redirect pages (Google News) render nothing readable; their stories arrive from the outlets' own feeds. */
+const UNREADABLE = /^https?:\/\/(news\.google\.com|news\.yahoo\.com\/rss)\//i;
+
 export async function readArticle(url: string): Promise<string | null> {
-  if (!config.news.reader) return null;
+  if (!config.news.reader || UNREADABLE.test(url) || !takeReadBudget()) return null;
   try {
     const headers: Record<string, string> = { accept: 'text/plain', 'x-return-format': 'markdown', 'x-retain-images': 'none' };
     if (config.news.readerKey) headers.authorization = `Bearer ${config.news.readerKey}`;
