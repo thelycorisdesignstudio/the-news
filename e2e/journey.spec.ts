@@ -118,3 +118,30 @@ test('a session that lapses while the app is open shows the signed-out pop-up', 
   await expect(page.getByRole('heading', { name: 'welcome back.' })).toBeVisible();
   await expect(dialog).toHaveCount(0);
 });
+
+test('list view search narrows the day to matching stories', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(`search${Date.now()}@example.com`);
+  await page.getByLabel('Password', { exact: true }).fill('x');
+  await page.getByRole('button', { name: 'log in' }).click();
+  await expect(page.getByRole('heading', { name: 'what do you follow?' })).toBeVisible({ timeout: 5000 });
+  await page.evaluate(async () => {
+    const prefs = { topics: ['AI Models', 'AI Policy', 'Robotics'], countries: [], coverage: ['global', 'national'], radiusKm: 3, places: [], followTravel: false, filters: { cov: [], cty: [], plc: [], top: [], typ: [] }, notifications: { enabled: false, time: '08:00' }, paceMs: null, theme: 'light', textSize: 'md', defaultView: 'list', haptics: true, reduceMotion: false, mutedSources: [], onboarded: true, updatedAt: Date.now() };
+    await fetch('/api/prefs', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prefs }) });
+    localStorage.clear();
+  });
+  await page.goto('/');
+  const search = page.getByRole('searchbox', { name: "search today's stories" });
+  await expect(search).toBeVisible({ timeout: 8000 }); // "feed opens in: list" is honoured
+  const cards = page.locator('button.card');
+  const all = await cards.count();
+  expect(all).toBeGreaterThan(3);
+  await search.fill('openai');
+  await expect.poll(() => cards.count()).toBeLessThan(all);
+  expect(await cards.count()).toBeGreaterThan(0);
+  for (const t of await cards.allTextContents()) expect(t.toLowerCase()).toContain('openai');
+  await search.fill('zzzqqq');
+  await expect(page.getByText('nothing matches "zzzqqq".')).toBeVisible();
+  await page.getByRole('button', { name: 'clear search' }).last().click();
+  await expect.poll(() => cards.count()).toBe(all);
+});

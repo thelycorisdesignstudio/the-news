@@ -298,18 +298,38 @@ function CaughtUp({ segments, count, saved, onTop }: { segments: number; count: 
 /** 14 · List view. For scanning; swipe stays the default on launch. */
 function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: number[]; nav: NavHandlers; onRead: (s: Story) => void }) {
   const [cat, setCat] = useState<string | null>(null);
+  const [q, setQ] = useState('');
   const cats = useMemo(() => [...new Set(stories.filter(s => !s.removed).map(s => s.cat))], [stories]);
   const now = Date.now();
-  const rows = stories.map((s, i) => ({ s, prog: track[i] })).filter(r => !r.s.removed && (!cat || r.s.cat === cat));
+  // Search runs over the day's queue as you type: headline, summary, outlet, topic and place.
+  // Each word matches the start of a word ("ai" finds "AI", not "trains"), and every word must match.
+  const terms = useMemo(() => q.toLowerCase().split(/\s+/).filter(Boolean)
+    .map(t => new RegExp(`(^|[^\\p{L}\\p{N}])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'iu')), [q]);
+  const matches = (s: Story) => !terms.length || terms.every(re => re.test(`${s.title} ${s.summary} ${s.source} ${s.cat} ${locationTag(s) ?? ''}`));
+  const rows = stories.map((s, i) => ({ s, prog: track[i] })).filter(r => !r.s.removed && (!cat || r.s.cat === cat) && matches(r.s));
   const chip = (on: boolean) => ({ flex: 'none', padding: '8px 14px', borderRadius: 50, border: 0, background: 'transparent', color: on ? '#FFFFFF' : 'var(--ink)', font: '600 13px/1 var(--font)', cursor: 'pointer' } as const);
   return (
     <>
       <FeedNav {...nav} view="list" showFilter={false} top={62} />
-      <div className="no-scrollbar" role="tablist" style={{ position: 'absolute', top: T(108), left: 0, right: 0, display: 'flex', gap: 8, padding: '0 20px', overflowX: 'auto' }}>
+      <div role="search" style={{ position: 'absolute', top: T(106), left: 20, right: 20 }}>
+        <div className="field frost" style={{ height: 44, borderRadius: 50 }}>
+          <Icon name="search" size={18} color="var(--gray-2)" />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="search today's stories" aria-label="search today's stories" type="search" enterKeyHint="search" autoComplete="off" />
+          {q && <button className="link-btn" aria-label="clear search" onClick={() => setQ('')} style={{ display: 'flex' }}><Icon name="cancel-circle" size={18} color="var(--gray-2)" /></button>}
+        </div>
+      </div>
+      <div className="no-scrollbar" role="tablist" style={{ position: 'absolute', top: T(162), left: 0, right: 0, display: 'flex', gap: 8, padding: '0 20px', overflowX: 'auto' }}>
         <button role="tab" aria-selected={!cat} className={`lg${!cat ? ' lg-signal' : ''}`} style={chip(!cat)} onClick={() => setCat(null)}><GlassBg />All</button>
         {cats.map(c => <button key={c} role="tab" aria-selected={cat === c} className={`lg${cat === c ? ' lg-signal' : ''}`} style={chip(cat === c)} onClick={() => setCat(c)}><GlassBg />{c}</button>)}
       </div>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(156), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="no-scrollbar" style={{ position: 'absolute', top: T(210), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {!rows.length && (
+          <div role="status" style={{ padding: '48px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <span style={{ font: '700 20px/1.25 var(--font)', letterSpacing: '-0.03em' }}>{q ? `nothing matches "${q.trim()}".` : 'nothing here yet.'}</span>
+            <span style={{ font: '400 14px/1.5 var(--font)', color: 'var(--gray)' }}>{q ? 'try another word, or search all topics.' : 'pick another topic above.'}</span>
+            {(q || cat) && <button className="link-btn" onClick={() => { setQ(''); setCat(null); }} style={{ marginTop: 8, font: '600 14px/1 var(--font)', color: 'var(--signal)' }}>clear search</button>}
+          </div>
+        )}
         {rows.map(({ s, prog }) => (
           <button key={s.id} onClick={() => onRead(s)} className="card row-btn frost" style={{ flex: 'none', padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, border: '1px solid var(--rule)', background: 'var(--card)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -337,10 +357,11 @@ function ListSkeleton() {
       <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Wordmark size="xs" />
       </div>
-      <div style={{ position: 'absolute', top: T(112), left: 20, right: 20, display: 'flex', gap: 8 }}>
+      <div style={{ position: 'absolute', top: T(106), left: 20, right: 20 }}><Shimmer w="100%" h={44} r={22} /></div>
+      <div style={{ position: 'absolute', top: T(162), left: 20, right: 20, display: 'flex', gap: 8 }}>
         <Shimmer w={48} h={30} /><Shimmer w={90} h={30} /><Shimmer w={80} h={30} /><Shimmer w={70} h={30} />
       </div>
-      <div style={{ position: 'absolute', top: T(160), left: 16, right: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ position: 'absolute', top: T(210), left: 16, right: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {[0, 1, 2, 3].map(i => (
           <div key={i} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Shimmer w={72} h={18} /><Shimmer w="100%" h={20} /><Shimmer w="70%" h={20} />

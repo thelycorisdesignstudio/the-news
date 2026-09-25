@@ -252,7 +252,8 @@ export function GlobalToast() {
   const { toast } = useStore();
   if (!toast) return null;
   return (
-    <div key={toast.id} role="status" className="toast" style={{ position: 'absolute', top: T(112), left: '50%', transform: 'translateX(-50%)', zIndex: 60, animation: 'tnFade 150ms ease-out', display: 'flex', alignItems: 'center', gap: 12 }}>
+    // Confirmations sit up top like the design's; a toast with an action (undo) sits at the bottom, in thumb reach and clear of titles.
+    <div key={toast.id} role="status" className="toast" style={{ position: 'absolute', ...(toast.action ? { bottom: B(64), padding: '12px 16px', fontSize: 13 } : { top: T(112) }), left: '50%', transform: 'translateX(-50%)', zIndex: 60, animation: 'tnFade 150ms ease-out', display: 'flex', alignItems: 'center', gap: 14 }}>
       {toast.text}
       {toast.action && <button className="link-btn" onClick={toast.action.run} style={{ font: '600 12px/1 var(--font)', color: 'inherit', textDecoration: 'underline' }}>{toast.action.label}</button>}
     </div>
@@ -307,16 +308,31 @@ export function Sheet({ onClose, top = 84, children, label, scroll = true }: { o
  */
 export function Dialog({ title, body, children, onClose }: { icon?: IconName; title: string; body: string; children: ReactNode; onClose?: () => void }) {
   const titleId = useId();
+  const box = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  // Focus moves into the pop-up, Tab stays inside it, Escape closes it, and focus goes back afterwards.
   useEffect(() => {
-    if (!onClose) return;
-    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const before = document.activeElement as HTMLElement | null;
+    const focusables = () => [...(box.current?.querySelectorAll<HTMLElement>('button:not(:disabled), textarea, input, [href]') ?? [])];
+    const first = focusables().find(el => !el.classList.contains('pop__close')) ?? focusables()[0];
+    first?.focus({ preventScroll: true });
+    const k = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && closeRef.current) { e.preventDefault(); closeRef.current(); return; }
+      if (e.key !== 'Tab') return;
+      const els = focusables();
+      if (!els.length) return;
+      const i = els.indexOf(document.activeElement as HTMLElement);
+      if (e.shiftKey && (i <= 0)) { e.preventDefault(); els[els.length - 1].focus(); }
+      else if (!e.shiftKey && (i === -1 || i === els.length - 1)) { e.preventDefault(); els[0].focus(); }
+    };
     window.addEventListener('keydown', k);
-    return () => window.removeEventListener('keydown', k);
-  }, [onClose]);
+    return () => { window.removeEventListener('keydown', k); before?.focus?.({ preventScroll: true }); };
+  }, []);
   return (
     <>
       <div className="pop-scrim" onClick={onClose} />
-      <div role="alertdialog" aria-modal="true" aria-labelledby={titleId} className="pop">
+      <div ref={box} role="alertdialog" aria-modal="true" aria-labelledby={titleId} className="pop">
         <div className="pop__spine" aria-hidden>
           <span className="pop__mark"><i>The</i> News</span>
           <span className="pop__stamp">9s</span>

@@ -343,8 +343,8 @@ export function LogIn() {
               <span style={{ flex: 1, height: 1, background: 'var(--rule)' }} />
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
-              <Button type="button" variant="dark" icon="apple" onClick={() => oauth('apple')}>Apple</Button>
-              <Button type="button" variant="light" icon="google" onClick={() => oauth('google')}>Google</Button>
+              <Button type="button" variant="dark" icon="apple" onClick={() => oauth('apple')} style={{ flex: '1 1 0', width: 'auto', minWidth: 0 }}>Apple</Button>
+              <Button type="button" variant="light" icon="google" onClick={() => oauth('google')} style={{ flex: '1 1 0', width: 'auto', minWidth: 0 }}>Google</Button>
             </div>
           </>
         )}

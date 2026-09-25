@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, type Location } from 'react-router-dom';
 import { Button, Device, Dialog, GlobalToast } from './components/ui';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { api } from './lib/api';
 import { currentPosition } from './lib/device';
 import { storage } from './lib/storage';
@@ -108,6 +109,7 @@ function Shell() {
   return (
     <>
       <RouteFade>{location => (
+      <ErrorBoundary resetKey={location.pathname}>
       <Routes location={location}>
         <Route path="/" element={<Home />} />
         <Route path="/filters" element={o(<Feed filtersOpen />)} />
@@ -145,6 +147,7 @@ function Shell() {
         <Route path="/terms" element={<Terms />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </ErrorBoundary>
       )}</RouteFade>
       <SessionExpired />
     </>
