@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { COUNTRIES, COVERAGE, POPULAR_COUNTRIES, RADII, TOPICS, countryName, filtersFromPrefs, type Place, type Story } from '../../shared/domain';
 import { Wordmark } from '../components/Brand';
 import { Icon, type IconName } from '../components/Icon';
-import { BackButton, B, Button, Check, Footer, LoaderBar, Segmented, StateMessage, StepHeader, T, Title, useStagger } from '../components/ui';
+import { BackButton, B, Button, Check, Footer, LoaderBar, Segmented, Shimmer, StateMessage, StepHeader, T, Title, useStagger } from '../components/ui';
 import { GlassBg } from '../components/Glass';
 import { api } from '../lib/api';
 import { currentPosition, enableNotifications } from '../lib/device';
@@ -342,10 +342,11 @@ export function Pace({ edit }: { edit?: boolean }) {
 export function Notifications() {
   const nav = useNavigate();
   const { prefs, updatePrefs, finishOnboarding, user, showToast } = useStore();
-  const [top, setTop] = useState<Story | null>(null);
+  // undefined while loading, null when there's nothing yet.
+  const [top, setTop] = useState<Story | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    api.feed(filtersFromPrefs(prefs), prefs.places).then(r => setTop(r.stories[0] ?? null)).catch(() => {});
+    api.feed(filtersFromPrefs(prefs), prefs.places).then(r => setTop(r.stories.find(s => !s.removed) ?? null)).catch(() => setTop(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const finish = () => {
@@ -366,7 +367,7 @@ export function Notifications() {
     }
     finish();
   };
-  const preview = top ? `${top.cat} · ${top.title}` : 'AI Models · OpenAI releases GPT-5 with reasoning capabilities that exceed PhD-level benchmarks';
+  const preview = top ? `${top.cat} · ${top.title}` : 'your most important story of the day, every morning.';
   return (
     <div className="screen">
       <StepHeader step={5} onSkip={finish} hideNext />
@@ -376,7 +377,7 @@ export function Notifications() {
       </div>
       <div className="rise" style={{ position: 'absolute', top: T(320), left: 16, right: 16, animationDelay: '200ms' }} aria-hidden>
         <div className="frost" style={{ position: 'absolute', left: 14, right: 14, top: 16, height: 80, borderRadius: 12, background: 'var(--card)', boxShadow: '0 0 0 1px var(--rule)', opacity: 0.6 }} />
-        <div className="frost" style={{ position: 'relative', padding: '12px 14px', borderRadius: 12, background: 'var(--card)', boxShadow: '0 12px 32px rgba(10,10,10,.08), 0 0 0 1px var(--rule)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <div className="on-paper" style={{ position: 'relative', padding: '12px 14px', borderRadius: 12, background: 'var(--card)', boxShadow: '0 12px 32px rgba(10,10,10,.08), 0 0 0 1px var(--rule)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{ flex: 'none', width: 38, height: 38, borderRadius: 9, background: 'var(--surface)', border: '1px solid var(--rule)', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: 5, lineHeight: 1 }}>
             <span style={{ font: 'italic 400 10px/1 var(--font)', color: 'var(--gray)' }}>The</span>
             <span style={{ font: '800 12px/1 var(--font)', letterSpacing: '-.5px' }}>News</span>
@@ -386,7 +387,9 @@ export function Notifications() {
               <span style={{ font: '600 13px/1.3 var(--font)' }}>The News</span>
               <span style={{ font: '400 12px/1.3 var(--font)', color: 'var(--gray)' }}>{prefs.notifications.time === '08:00' ? 'now' : prefs.notifications.time}</span>
             </div>
-            <span style={{ font: '400 13px/1.4 var(--font)', color: 'var(--ink)' }}>{preview}</span>
+            {top === undefined
+              ? <span style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 2 }}><Shimmer w="92%" h={11} r={5} /><Shimmer w="64%" h={11} r={5} /></span>
+              : <span style={{ font: '400 13px/1.4 var(--font)', color: 'var(--ink)' }}>{preview}</span>}
           </div>
         </div>
       </div>

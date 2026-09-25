@@ -239,7 +239,7 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
           <span style={{ font: '500 13px/1 var(--font)', color: 'var(--gray)' }}>{refreshing ? 'checking for new stories' : pull > 56 ? 'release to refresh' : 'pull to refresh'}</span>
         </div>
       )}
-      <div ref={ref} onScroll={onScroll} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} {...doubleTap} className="no-scrollbar pager" aria-label="today's stories"
+      <div ref={ref} onScroll={onScroll} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} {...doubleTap} className="no-scrollbar pager content-in" aria-label="today's stories"
         style={{ position: 'absolute', inset: 0, transform: pull ? `translateY(${pull}px)` : undefined, transition: pullStart.current == null ? 'transform 200ms' : 'none', borderRadius: pull ? '20px 20px 0 0' : undefined, boxShadow: pull ? '0 -1px 0 var(--rule)' : undefined }}>
         {stories.map((s, i) => (
           <div key={s.id} style={{ position: 'relative', height: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always' }} aria-hidden={i !== idx || undefined}>
@@ -322,7 +322,7 @@ function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: nu
         <button role="tab" aria-selected={!cat} className={`lg${!cat ? ' lg-signal' : ''}`} style={chip(!cat)} onClick={() => setCat(null)}><GlassBg />All</button>
         {cats.map(c => <button key={c} role="tab" aria-selected={cat === c} className={`lg${cat === c ? ' lg-signal' : ''}`} style={chip(cat === c)} onClick={() => setCat(c)}><GlassBg />{c}</button>)}
       </div>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(210), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="no-scrollbar content-in" style={{ position: 'absolute', top: T(210), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {!rows.length && (
           <div role="status" style={{ padding: '48px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <span style={{ font: '700 20px/1.25 var(--font)', letterSpacing: '-0.03em' }}>{q ? `nothing matches "${q.trim()}".` : 'nothing here yet.'}</span>

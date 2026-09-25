@@ -21,13 +21,14 @@
   --scrim: rgba(10, 10, 10, .35);
   --toast-bg: #0A0A0A;
   --toast-fg: #FFFFFF;
-  --shimmer-a: #F0F0EE;
-  --shimmer-b: #F7F7F5;
-  --grad: linear-gradient(125deg, #E8AE8C 0%, #F0BF9C 22%, #EBD6C8 42%, #DADAD8 58%, #C9DCE8 78%, #EED4B2 100%);
-  --grad-base: #EBD6C8;
+  /* Frosted: skeletons read as glass on the gradient, not grey blocks. */
+  --shimmer-a: rgba(255, 255, 255, .42);
+  --shimmer-b: rgba(255, 255, 255, .78);
+  --grad: linear-gradient(125deg, #E8AE8C 0%, #F0BF9C 20%, #EBD6C8 36%, #D6DAE0 50%, #C4D8EA 66%, #B7D0EA 84%, #EED4B2 100%);
+  --grad-base: #E6D8D0;
   --grad-peach: #E8AE8C;
-  --grad-blue: #C9DCE8;
-  --grad-blue-deep: #A3C4E2;
+  --grad-blue: #BED6EC;
+  --grad-blue-deep: #8FB6E0;
   /* Glass */
   --glass-tint: rgba(255, 255, 255, .32);
   --glass-rim-hi: rgba(255, 255, 255, .95);
@@ -62,13 +63,13 @@
   --scrim: rgba(0, 0, 0, .55);
   --toast-bg: #F4F4F1;
   --toast-fg: #0A0A0A;
-  --shimmer-a: #262626;
-  --shimmer-b: #313131;
+  --shimmer-a: rgba(255, 255, 255, .06);
+  --shimmer-b: rgba(255, 255, 255, .14);
   --grad: linear-gradient(125deg, #3B2A22 0%, #3F3026 22%, #33292A 42%, #242424 58%, #1D2A33 78%, #3A3024 100%);
   --grad-base: #2A2624;
   --grad-peach: #5C3B29;
-  --grad-blue: #22384A;
-  --grad-blue-deep: #1E3D5C;
+  --grad-blue: #243D55;
+  --grad-blue-deep: #1F4470;
   --glass-tint: rgba(40, 40, 40, .34);
   --glass-rim-hi: rgba(255, 255, 255, .35);
   --glass-rim-lo: rgba(255, 255, 255, .05);
@@ -150,7 +151,7 @@ input { font-family: var(--font); }
   animation: tnPeach 13s ease-in-out infinite alternate;
 }
 .grad-mix::after {
-  width: 170%; height: 115%; left: -62%; top: 16%;
+  width: 185%; height: 130%; left: -64%; top: 8%;
   background: radial-gradient(closest-side, var(--grad-blue-deep) 0%, color-mix(in srgb, var(--grad-blue-deep) 70%, var(--grad-blue)) 30%, color-mix(in srgb, var(--grad-blue) 75%, transparent) 50%, color-mix(in srgb, var(--grad-blue) 22%, transparent) 75%, color-mix(in srgb, var(--grad-blue) 0%, transparent) 100%);
   animation: tnBlue 17s ease-in-out infinite alternate;
 }
@@ -239,7 +240,9 @@ input { font-family: var(--font); }
 .btn-primary.lg.is-loading { background: transparent; }
 .btn-secondary.lg { background: transparent; }
 .btn-dark.lg { --lg-tint: color-mix(in srgb, var(--ink) 88%, transparent); }
-.btn-light.lg { border-color: transparent; }
+.btn-light.lg { border-color: transparent; --lg-tint: color-mix(in srgb, var(--card) 80%, transparent); }
+/* Clear glass on a white button: keep the edge light, not colour, so the blue behind never turns it cyan. */
+.btn-light.lg .lg__lens, .btn-secondary.lg .lg__lens { opacity: .3; }
 .chip.lg, .chip-sm.lg { background: transparent; border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--glass-shadow); }
 .chip.lg.is-on, .chip-sm.lg.is-on { --lg-tint: color-mix(in srgb, var(--signal-tint) 86%, transparent); border-color: var(--signal); box-shadow: 0 4px 14px color-mix(in srgb, var(--signal) 16%, transparent); }
 .chip.lg.is-off-disabled { --lg-tint: color-mix(in srgb, var(--rule) 80%, transparent); box-shadow: none; }
@@ -380,3 +383,11 @@ input { font-family: var(--font); }
 /* Search fields use our own clear button. */
 input[type="search"]::-webkit-search-cancel-button, input[type="search"]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 input[type="search"] { -webkit-appearance: none; appearance: none; }
+
+/* Inside sheets (reader, filters) the surface is solid paper: skeletons darken it slightly instead. */
+[role="dialog"], .on-paper { --shimmer-a: rgba(10, 10, 10, .05); --shimmer-b: rgba(10, 10, 10, .1); }
+:root[data-theme="dark"] [role="dialog"], :root[data-theme="dark"] .on-paper { --shimmer-a: rgba(255, 255, 255, .06); --shimmer-b: rgba(255, 255, 255, .13); }
+
+/* Content replacing a skeleton eases in instead of popping. */
+@keyframes tnContentIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.content-in { animation: tnContentIn 320ms cubic-bezier(.2, .8, .2, 1) backwards; }

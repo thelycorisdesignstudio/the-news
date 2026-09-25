@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { RADII, countryName, type Place } from '../../shared/domain';
 import { Icon, type IconName } from '../components/Icon';
-import { BackButton, Button, Footer, Segmented, Switch, T, Title, useStagger } from '../components/ui';
+import { BackButton, Button, Footer, Segmented, Shimmer, Switch, T, Title, useStagger } from '../components/ui';
 import { GlassBg } from '../components/Glass';
 import { api } from '../lib/api';
 import { currentPosition } from '../lib/device';
@@ -161,14 +161,16 @@ export function AddPlace() {
   const { prefs, updatePrefs, showToast } = useStore();
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Found[] | null>(null);
+  const [searching, setSearching] = useState(false);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     const n = q.trim();
-    if (!n) { setResults(null); return; }
+    if (!n) { setResults(null); setSearching(false); return; }
     let alive = true;
+    setSearching(true);
     const t = window.setTimeout(() => {
-      api.searchPlaces(n).then(r => alive && setResults(r.places)).catch(() => alive && setResults([]));
+      api.searchPlaces(n).then(r => alive && setResults(r.places)).catch(() => alive && setResults([])).finally(() => alive && setSearching(false));
     }, 200);
     return () => { alive = false; window.clearTimeout(t); };
   }, [q]);
@@ -210,7 +212,7 @@ export function AddPlace() {
       <BackButton />
       <Title>{asHome ? 'where is home?' : 'add a place.'}</Title>
       <SearchBox value={q} onChange={setQ} placeholder="search neighbourhoods and cities" />
-      {n && results && !results.length ? <NoResults what="places" q={n} /> : (
+      {n && results && !results.length && !searching ? <NoResults what="places" q={n} /> : (
         <div className="no-scrollbar" style={{ position: 'absolute', top: T(232), left: 0, right: 0, bottom: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {!n && (
             <button className="row-btn" onClick={locate} disabled={locating} style={{ height: 56, padding: '0 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '.5px solid var(--rule)', flex: 'none' }}>
@@ -218,6 +220,13 @@ export function AddPlace() {
               <span style={{ font: '600 14px/1 var(--font)', color: 'var(--signal)' }}>{locating ? 'finding you…' : 'use my current location'}</span>
             </button>
           )}
+          {n && searching && !results?.length && [0, 1, 2, 3].map(i => (
+            <div key={i} aria-hidden style={{ minHeight: 64, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '.5px solid var(--rule)', flex: 'none' }}>
+              <Shimmer w={36} h={36} r={18} />
+              <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}><Shimmer w={`${60 - i * 8}%`} h={14} r={7} /><Shimmer w={`${42 + i * 5}%`} h={10} r={5} /></span>
+            </div>
+          ))}
+          {n && searching && !results?.length && <span className="sr-only" role="status">searching places…</span>}
           {results?.map(r => {
             const i = r.area.toLowerCase().indexOf(n.toLowerCase());
             return (
