@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Filters, Place, Story } from '../../shared/domain';
 import { api, ApiError } from './api';
 import { storage } from './storage';
@@ -16,7 +16,7 @@ export const cachedFeed = () => storage.get<Cached | null>('feed', null);
  * The day's queue. It stays stable while you read; it refreshes on pull-to-refresh, when filters
  * change, or at launch once it is more than 30 minutes old. Offline, the last queue keeps working.
  */
-export function useFeed(filters: Filters, places: Place[], paused = false) {
+export function useFeed(filters: Filters, places: Place[], paused = false, muted: string[] = []) {
   const key = feedKey(filters, places);
   const [state, setState] = useState<{ status: FeedStatus; stories: Story[]; fetchedAt: number | null; error: ApiError | null; stale: boolean }>(() => {
     const c = cachedFeed();
@@ -105,5 +105,10 @@ export function useFeed(filters: Filters, places: Place[], paused = false) {
     return () => window.removeEventListener('online', on);
   }, [state.stale, load]);
 
-  return { ...state, refresh: () => load({ keepQueue: false }) };
+  // Muted outlets drop out of the queue without a refetch.
+  const mutedKey = muted.join('|');
+  const stories = useMemo(() => (muted.length ? state.stories.filter(s => !muted.includes(s.source)) : state.stories),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.stories, mutedKey]);
+  return { ...state, stories, refresh: () => load({ keepQueue: false }) };
 }

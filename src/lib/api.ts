@@ -55,6 +55,8 @@ export const api = {
   reset: (token: string, password: string) => call<{ user: User }>('POST', '/auth/reset', { token, password }),
   logout: () => call<{ ok: true }>('POST', '/auth/logout'),
   deleteAccount: () => call<{ ok: true }>('DELETE', '/auth/me'),
+  updateMe: (b: { name: string }) => call<{ user: User }>('PATCH', '/auth/me', b),
+  feedback: (b: { rating?: number | null; message: string; context?: string }) => call<{ ok: true }>('POST', '/feedback', b),
 
   feed: (filters: Filters, places: Place[], keep: string[] = []) => call<{ stories: Story[]; generatedAt: string }>('POST', '/feed', { filters, places, keep }),
   feedCount: (filters: Filters, places: Place[]) => call<{ count: number }>('POST', '/feed/count', { filters, places }),

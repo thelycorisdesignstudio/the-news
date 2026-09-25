@@ -9,6 +9,7 @@ import { GlassBg } from '../components/Glass';
 import { api, ApiError } from '../lib/api';
 import { shareStory } from '../lib/device';
 import { haptic, useDoubleTap, useSnapPager } from '../lib/pager';
+import { FeedbackDialog, feedbackAsked, markFeedbackAsked } from '../components/Feedback';
 import { useFeed } from '../lib/feed';
 import { filterGroups, showLabel, toggleFilter, uniq } from '../lib/filters';
 import { useStore } from '../lib/store';
@@ -21,9 +22,9 @@ export function Feed({ filtersOpen }: { filtersOpen?: boolean }) {
   const nav = useNavigate();
   const [params, setParams] = useSearchParams();
   const { prefs, online, showToast, markRead } = useStore();
-  const feed = useFeed(prefs.filters, prefs.places, !!filtersOpen);
+  const feed = useFeed(prefs.filters, prefs.places, !!filtersOpen, prefs.mutedSources);
   const stories = feed.stories;
-  const [view, setView] = useState<View>('swipe');
+  const [view, setView] = useState<View>(() => prefs.defaultView ?? 'swipe');
   const [reader, setReader] = useState<Story | null>(null);
 
   // Queue position and the nine-second timer are shared by the swipe and list views.
@@ -125,8 +126,16 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
   stories: Story[]; idx: number; track: number[]; pct: number; done: Record<string, boolean>; goTo: (i: number) => void;
   nav: NavHandlers; onRead: (s: Story) => void; onRefresh: () => Promise<void>;
 }) {
-  const { isLiked, isSaved, toggleLike, toggleSave, showToast } = useStore();
+  const { isLiked, isSaved, toggleLike, toggleSave, showToast, library } = useStore();
   const ref = useRef<HTMLDivElement>(null);
+  // Feedback is asked for once, at the caught-up card, after a real session of reading. Never mid-story.
+  const [askFeedback, setAskFeedback] = useState(false);
+  const atEnd = stories.length > 0 && idx >= stories.length;
+  useEffect(() => {
+    if (!atEnd || feedbackAsked() || library.history.length < 12) return;
+    const t = window.setTimeout(() => setAskFeedback(true), 1400);
+    return () => window.clearTimeout(t);
+  }, [atEnd, library.history.length]);
   const [toastFor, setToastFor] = useState<string | null>(null);
   const [tipFor, setTipFor] = useState<string | null>(null);
   const [burstFor, setBurstFor] = useState<string | null>(null);
@@ -252,6 +261,7 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
           <CaughtUp segments={stories.length} count={stories.filter(s => !s.removed).length} saved={savedHere} onTop={() => scrollToIdx(0)} />
         </div>
       </div>
+      {askFeedback && <FeedbackDialog context="caught-up" onClose={() => { markFeedbackAsked(); setAskFeedback(false); }} />}
       {hearts.map(h => (
         <div key={h.id} aria-hidden style={{ position: 'absolute', left: h.x - 48, top: h.y - 48, width: 96, height: 96, borderRadius: '50%', background: 'color-mix(in srgb, var(--alert-tint) 92%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 8, animation: 'tnHeartPop 850ms cubic-bezier(.2,.8,.2,1) forwards', boxShadow: '0 12px 32px rgba(255,59,59,.18)' }}>
           <Icon name="favourite" size={52} color="var(--alert)" />
@@ -373,11 +383,11 @@ export function ReaderSheet({ story, onClose }: { story: Story; onClose: () => v
               <span style={{ font: '400 12px/1 var(--font)', color: 'var(--gray)' }}>{timeAgo(s.publishedAt)}</span>
             </div>
             <div style={{ width: 40, height: 1, background: 'var(--rule)', margin: '20px 0' }} />
-            <p style={{ margin: 0, font: '400 16px/1.7 var(--font)', color: 'var(--body)' }}>{s.summary}</p>
+            <p style={{ margin: 0, font: '400 calc(16px * var(--ts, 1))/1.7 var(--font)', color: 'var(--body)' }}>{s.summary}</p>
             {full ? full.more?.map(m => (
               <div key={m.h} style={{ display: 'contents' }}>
                 <span className="eyebrow" style={{ marginTop: 24 }}>{m.h}</span>
-                <p style={{ margin: '8px 0 0', font: '400 16px/1.7 var(--font)', color: 'var(--body)' }}>{m.p}</p>
+                <p style={{ margin: '8px 0 0', font: '400 calc(16px * var(--ts, 1))/1.7 var(--font)', color: 'var(--body)' }}>{m.p}</p>
               </div>
             )) : (
               <div style={{ alignSelf: 'stretch', marginTop: 28 }} aria-busy="true" aria-label="loading more context">

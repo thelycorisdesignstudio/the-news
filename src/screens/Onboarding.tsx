@@ -274,7 +274,7 @@ const PACE_STORY = {
 };
 
 /** 05 · Pace calibration. The real nine-second timer, taught once. */
-export function Pace() {
+export function Pace({ edit }: { edit?: boolean }) {
   const nav = useNavigate();
   const { updatePrefs } = useStore();
   const [start, setStart] = useState(() => performance.now());
@@ -302,10 +302,10 @@ export function Pace() {
       setNow(t);
     }
   };
-  const next = () => nav(STEPS[4]);
+  const next = () => (edit ? nav('/profile') : nav(STEPS[4]));
   return (
     <div className="screen">
-      <StepHeader step={4} onSkip={next} onNext={next} nextEnabled={result != null} />
+      {edit ? <BackButton to="/profile" /> : <StepHeader step={4} onSkip={next} onNext={next} nextEnabled={result != null} />}
       <div className="rise" style={{ position: 'absolute', top: T(112), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
         <h2 style={{ margin: 0, font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>let's find your pace.</h2>
         <p style={{ margin: '8px 0 0', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>read this the way you normally would.</p>
@@ -332,6 +332,7 @@ export function Pace() {
           </span>
         )}
         <Button variant="secondary" onClick={tap}>{result != null ? 'read it again' : "tap when you're done reading"}</Button>
+        {edit && result != null && <Button onClick={next}>save my pace</Button>}
       </Footer>
     </div>
   );

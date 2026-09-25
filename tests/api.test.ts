@@ -236,3 +236,35 @@ describe('dummy auth (for now)', () => {
     expect(r.body.dummy).toBe(true);
   });
 });
+
+describe('profile and feedback', () => {
+  it('renames the account', async () => {
+    const agent = request.agent(app);
+    await signUp(agent);
+    const r = await agent.patch('/api/auth/me').send({ name: '  Maya C.  ' }).expect(200);
+    expect(r.body.user.name).toBe('Maya C.');
+    await agent.patch('/api/auth/me').send({ name: ' ' }).expect(400);
+    await request(app).patch('/api/auth/me').send({ name: 'x' }).expect(401);
+  });
+
+  it('keeps new reading preferences, with defaults for older clients', async () => {
+    const agent = request.agent(app);
+    await signUp(agent);
+    const old = { ...defaultPrefs(), onboarded: true, updatedAt: 1 } as Partial<Prefs>;
+    delete old.textSize; delete old.mutedSources;
+    const r = await agent.put('/api/prefs').send({ prefs: old }).expect(200);
+    expect(r.body.prefs).toMatchObject({ textSize: 'md', mutedSources: [] });
+    const r2 = await agent.put('/api/prefs').send({ prefs: { ...defaultPrefs(), textSize: 'lg', mutedSources: ['Wired'], reduceMotion: true, updatedAt: 2 } }).expect(200);
+    expect(r2.body.prefs).toMatchObject({ textSize: 'lg', mutedSources: ['Wired'], reduceMotion: true });
+  });
+
+  it('takes feedback from anyone, shows it to admins, and limits floods', async () => {
+    config.adminToken = 'test-admin';
+    await request(app).post('/api/feedback').send({}).expect(400);
+    await request(app).post('/api/feedback').send({ rating: 5, message: 'great', context: 'profile' }).expect(201);
+    const list = await request(app).get('/api/admin/feedback').set('Authorization', 'Bearer test-admin').expect(200);
+    expect(list.body.feedback[0]).toMatchObject({ rating: 5, message: 'great', context: 'profile' });
+    for (let i = 0; i < 9; i++) await request(app).post('/api/feedback').send({ rating: 3 }).expect(201);
+    await request(app).post('/api/feedback').send({ rating: 3 }).expect(429);
+  });
+});

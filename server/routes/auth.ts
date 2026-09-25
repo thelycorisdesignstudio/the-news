@@ -221,6 +221,12 @@ export function authRoutes(db: DB, mail: Mailer) {
     res.json({ user: req.user ?? null, sessionExpired: !!req.sessionExpired });
   });
 
+  r.patch('/me', requireUser, (req, res) => {
+    const body = parse(z.object({ name: z.string().trim().min(1, 'enter your name.').max(80) }), req.body);
+    db.prepare('UPDATE users SET name = ? WHERE id = ?').run(body.name, req.user!.id);
+    res.json({ user: toUser(findUserById(db, req.user!.id)!) });
+  });
+
   r.delete('/me', requireUser, (req, res) => {
     db.prepare('DELETE FROM users WHERE id = ?').run(req.user!.id);
     destroySession(db, req, res);

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { defaultPrefs, filtersFromPrefs, type Prefs, type Story, type User } from '../../shared/domain';
+import { TEXT_SCALE, defaultPrefs, filtersFromPrefs, type Prefs, type Story, type User } from '../../shared/domain';
 import { api, ApiError, type LibraryPayload } from './api';
+import { setHaptics } from './pager';
 import { storage } from './storage';
 
 type Saved = { story: Story; at: number };
@@ -15,7 +16,7 @@ interface Store {
   prefs: Prefs;
   library: Library;
   sessionExpired: boolean;
-  toast: { id: number; text: string } | null;
+  toast: { id: number; text: string; action?: { label: string; run: () => void } } | null;
   updatePrefs: (patch: Partial<Prefs> | ((p: Prefs) => Partial<Prefs>)) => void;
   finishOnboarding: () => void;
   /** Syncs local state with the account; resolves to whether onboarding is already done. */
@@ -29,7 +30,9 @@ interface Store {
   toggleLike: (story: Story) => void;
   markRead: (story: Story) => void;
   clearHistory: () => Promise<void>;
-  showToast: (text: string) => void;
+  showToast: (text: string, action?: { label: string; run: () => void }) => void;
+  /** After the account's details change (e.g. a new name). */
+  setAccount: (user: User) => void;
   refreshMe: () => Promise<void>;
 }
 
@@ -77,10 +80,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const pushTimer = useRef<number>(0);
   const historyBuf = useRef<string[]>([]);
 
-  const showToast = useCallback((text: string) => {
+  const showToast = useCallback((text: string, action?: { label: string; run: () => void }) => {
     window.clearTimeout(toastTimer.current);
-    setToast({ id: Date.now(), text });
-    toastTimer.current = window.setTimeout(() => setToast(null), 2200);
+    setToast({ id: Date.now(), text, action });
+    toastTimer.current = window.setTimeout(() => setToast(null), action ? 4500 : 2200);
   }, []);
 
   // Any authenticated call that comes back "session expired" surfaces the signed-out dialog.
@@ -96,7 +99,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [lapsed]);
 
-  useEffect(() => { storage.set('prefs', prefs); applyTheme(prefs.theme); }, [prefs]);
+  useEffect(() => {
+    storage.set('prefs', prefs);
+    applyTheme(prefs.theme);
+    const root = document.documentElement;
+    root.style.setProperty('--ts', String(TEXT_SCALE[prefs.textSize ?? 'md']));
+    if (prefs.reduceMotion) root.dataset.motion = 'reduce'; else delete root.dataset.motion;
+    setHaptics(prefs.haptics ?? true);
+  }, [prefs]);
   useEffect(() => { storage.set('library', library); }, [library]);
   useEffect(() => { storage.set('user', user); }, [user]);
 
@@ -283,15 +293,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     window.setTimeout(() => void flushOps(), 1500);
   }, [flushOps]);
 
+  // Clearing is undoable for a few seconds instead of asking first: the server copy goes when the toast does.
+  const clearTimer = useRef<number>(0);
   const clearHistory = useCallback(async () => {
+    const before = library.history;
     setLibrary(l => ({ ...l, history: [] }));
-    if (userRef.current) await guard(api.clearHistory()).catch(() => {});
-  }, [guard]);
+    window.clearTimeout(clearTimer.current);
+    clearTimer.current = window.setTimeout(() => {
+      if (userRef.current) void guard(api.clearHistory()).catch(() => {});
+    }, 4600);
+    showToast('reading history cleared', {
+      label: 'undo',
+      run: () => { window.clearTimeout(clearTimer.current); setLibrary(l => ({ ...l, history: before })); setToast(null); },
+    });
+  }, [guard, library.history, showToast]);
 
   const value = useMemo<Store>(() => ({
     booting, online, user, prefs, library, sessionExpired, toast, updatePrefs, finishOnboarding, signedIn, logout, deleteAccount,
     dismissExpired: () => { setSessionExpired(false); storage.set('wasSignedIn', false); },
-    isSaved, isLiked, toggleSave, toggleLike, markRead, clearHistory, showToast, refreshMe,
+    isSaved, isLiked, toggleSave, toggleLike, markRead, clearHistory, showToast, refreshMe, setAccount: setUser,
   }), [booting, online, user, prefs, library, sessionExpired, toast, updatePrefs, finishOnboarding, signedIn, logout, deleteAccount,
     isSaved, isLiked, toggleSave, toggleLike, markRead, clearHistory, showToast, refreshMe]);
 

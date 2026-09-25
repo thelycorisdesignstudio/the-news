@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 
+let hapticsOn = true;
+/** The reader can turn haptics off in their profile. */
+export const setHaptics = (on: boolean) => { hapticsOn = on; };
+
 /** Short vibrations where the device supports them (Android, most PWAs). Silent elsewhere. */
 export function haptic(kind: 'tick' | 'like' | 'save' | 'success' | 'warn') {
+  if (!hapticsOn) return;
   const pattern = { tick: 8, like: [10, 40, 14], save: 12, success: [8, 60, 8], warn: [30, 40, 30] }[kind];
   try { navigator.vibrate?.(pattern); } catch { /* not supported */ }
 }

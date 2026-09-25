@@ -97,9 +97,9 @@ export function FeedCard(p: FeedCardProps) {
             </span>
           )}
         </div>
-        <h2 style={{ margin: '16px 0 0', fontFamily: 'var(--font)', fontWeight: 700, letterSpacing: '-0.03em', fontSize: headlineSize(s.title), lineHeight: 1.2, color: 'var(--headline)', textWrap: 'pretty', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 'none' }}>{s.title}</h2>
+        <h2 style={{ margin: '16px 0 0', fontFamily: 'var(--font)', fontWeight: 700, letterSpacing: '-0.03em', fontSize: `calc(${headlineSize(s.title)}px * var(--ts, 1))`, lineHeight: 1.2, color: 'var(--headline)', textWrap: 'pretty', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 'none' }}>{s.title}</h2>
         <div style={{ width: 40, height: 1, background: 'var(--rule)', margin: '20px 0 16px', flex: 'none' }} />
-        <p style={{ margin: 0, font: '400 16px/1.65 var(--font)', color: 'var(--body)', textWrap: 'pretty', overflow: 'hidden', minHeight: 0 }}>{s.summary}</p>
+        <p style={{ margin: 0, font: '400 calc(16px * var(--ts, 1))/1.65 var(--font)', color: 'var(--body)', textWrap: 'pretty', overflow: 'hidden', minHeight: 0 }}>{s.summary}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 24, flex: 'none' }}>
           <div style={{ width: 20, height: 20, borderRadius: 5, background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 10px/1 var(--font)', color: 'var(--gray)' }}>{s.source[0]}</div>
           <span style={{ font: '500 13px/1 var(--font)', color: 'var(--ink)' }}>{s.source}</span>

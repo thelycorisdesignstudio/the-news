@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { DB } from '../db';
 import { config } from '../config';
@@ -28,6 +29,11 @@ export const prefsSchema = z.object({
   notifications: z.object({ enabled: z.boolean(), time: z.string().regex(/^\d{2}:\d{2}$/), tz: z.string().max(64).optional() }),
   paceMs: z.number().min(0).max(600_000).nullable(),
   theme: z.enum(['system', 'light', 'dark']),
+  textSize: z.enum(['sm', 'md', 'lg']).default('md'),
+  defaultView: z.enum(['swipe', 'list']).default('swipe'),
+  haptics: z.boolean().default(true),
+  reduceMotion: z.boolean().default(false),
+  mutedSources: z.array(str).max(200).default([]),
   onboarded: z.boolean(),
   updatedAt: z.number(),
 });
@@ -83,6 +89,21 @@ export function dataRoutes(db: DB) {
     newsEvents.on('stories', send);
     const beat = setInterval(() => res.write(': ping\n\n'), 25_000);
     req.on('close', () => { clearInterval(beat); newsEvents.off('stories', send); });
+  });
+
+  // ---- feedback (signed in or not; a few a day per device is plenty) ----
+  r.post('/feedback', (req, res) => {
+    const body = parse(z.object({
+      rating: z.number().int().min(1).max(5).nullish(),
+      message: z.string().trim().max(2000).default(''),
+      context: z.string().max(60).optional(),
+    }).refine(b => b.rating || b.message, 'tell us something, or pick a rating.'), req.body);
+    const client = createHash('sha256').update(`${req.ip}|${req.get('user-agent') ?? ''}`).digest('hex');
+    const recent = db.prepare('SELECT COUNT(*) n FROM feedback WHERE client_hash = ? AND created_at > ?').get(client, Date.now() - 3600_000) as { n: number };
+    if (recent.n >= 10) throw new HttpError(429, 'thanks! that is plenty for now. try again later.');
+    db.prepare('INSERT INTO feedback (user_id, rating, message, context, client_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(req.user?.id ?? null, body.rating ?? null, body.message, body.context ?? null, client, Date.now());
+    res.status(201).json({ ok: true });
   });
 
   r.get('/stories/:id', (req, res) => {

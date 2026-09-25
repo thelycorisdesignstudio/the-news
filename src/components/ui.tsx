@@ -193,15 +193,15 @@ export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boo
   );
 }
 
-export function Segmented<T extends string | number>({ options, value, onChange, label, style }: {
-  options: { v: T; t: string }[]; value: T; onChange: (v: T) => void; label: string; style?: CSSProperties;
+export function Segmented<T extends string | number>({ options, value, onChange, label, style, compact }: {
+  options: { v: T; t: string }[]; value: T; onChange: (v: T) => void; label: string; style?: CSSProperties; compact?: boolean;
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="lg" style={{ display: 'grid', gridTemplateColumns: `repeat(${options.length}, 1fr)`, padding: 3, borderRadius: 50, ...style }}>
       <GlassBg />
       {options.map(o => (
         <button key={String(o.v)} role="radio" aria-checked={o.v === value} className={`link-btn${o.v === value ? ' lg lg-signal' : ''}`} onClick={() => onChange(o.v)}
-          style={{ height: 34, borderRadius: 50, color: o.v === value ? '#FFFFFF' : 'var(--gray)', font: '600 13px/1 var(--font)', transition: 'color 150ms' }}>
+          style={{ height: compact ? 28 : 34, borderRadius: 50, color: o.v === value ? '#FFFFFF' : 'var(--gray)', font: `600 ${compact ? 12 : 13}px/1 var(--font)`, transition: 'color 150ms' }}>
           {o.v === value && <GlassBg />}{o.t}
         </button>
       ))}
@@ -252,8 +252,9 @@ export function GlobalToast() {
   const { toast } = useStore();
   if (!toast) return null;
   return (
-    <div key={toast.id} role="status" className="toast" style={{ position: 'absolute', top: T(112), left: '50%', transform: 'translateX(-50%)', zIndex: 60, animation: 'tnFade 150ms ease-out' }}>
+    <div key={toast.id} role="status" className="toast" style={{ position: 'absolute', top: T(112), left: '50%', transform: 'translateX(-50%)', zIndex: 60, animation: 'tnFade 150ms ease-out', display: 'flex', alignItems: 'center', gap: 12 }}>
       {toast.text}
+      {toast.action && <button className="link-btn" onClick={toast.action.run} style={{ font: '600 12px/1 var(--font)', color: 'inherit', textDecoration: 'underline' }}>{toast.action.label}</button>}
     </div>
   );
 }

@@ -37,6 +37,10 @@ export function adminRoutes(db: DB) {
   r.get('/sources', async (_req, res) => {
     res.json({ live: config.news.live, writer: config.news.anthropicKey ? config.news.model : 'extractive', ...sourceHealth(db), agentReach: await agentReachDoctor() });
   });
+  r.get('/feedback', (_req, res) => {
+    res.json({ feedback: db.prepare(`SELECT f.id, f.rating, f.message, f.context, f.created_at AS createdAt, u.email
+      FROM feedback f LEFT JOIN users u ON u.id = f.user_id ORDER BY f.id DESC LIMIT 500`).all() });
+  });
   r.post('/ingest', async (_req, res) => {
     res.json(await runCycle(db, { force: true }));
   });

@@ -1,9 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { Story, Theme } from '../../shared/domain';
 import { LogoNine, Wordmark } from '../components/Brand';
 import { Icon } from '../components/Icon';
-import { BackButton, Button, Dialog, EditorialMark, FieldError, Switch, T, TextField, Title, useStagger } from '../components/ui';
+import { BackButton, Button, Dialog, EditorialMark, FieldError, Footer, Segmented, Switch, T, TextField, Title, useStagger } from '../components/ui';
+import { FeedbackDialog } from '../components/Feedback';
+import { api, ApiError } from '../lib/api';
+import { cachedFeed } from '../lib/feed';
 import { GlassBg } from '../components/Glass';
 import { disableNotifications, enableNotifications } from '../lib/device';
 import { useStore } from '../lib/store';
@@ -23,55 +26,176 @@ function Row({ label, value, onClick, children, danger }: { label: string; value
 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]!.toUpperCase()).join('') || '·';
 
+/** Consecutive days with at least one story read, counting back from today (or yesterday). */
+function streak(history: { at: number }[]) {
+  const days = new Set(history.map(h => new Date(h.at).toDateString()));
+  const d = new Date();
+  if (!days.has(d.toDateString())) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (days.has(d.toDateString())) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+function Section({ title }: { title: string }) {
+  return <span className="eyebrow" style={{ padding: '24px 20px 8px', flex: 'none' }}>{title}</span>;
+}
+
+function Stat({ v, l }: { v: string | number; l: string }) {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <span style={{ font: '700 22px/1 var(--font)', letterSpacing: '-0.02em', color: 'var(--ink)' }}>{v}</span>
+      <span style={{ font: '400 12px/1 var(--font)', color: 'var(--gray)' }}>{l}</span>
+    </div>
+  );
+}
+
 /** 16 · Profile & settings. From the avatar, top-left of the feed. */
 export function Profile() {
   const nav = useNavigate();
   const { user, prefs, library, updatePrefs, logout } = useStore();
+  const [feedback, setFeedback] = useState(false);
   const home = prefs.places.find(p => p.kind === 'home') ?? prefs.places[0];
   const since = user ? new Date(user.createdAt).toLocaleDateString('en', { month: 'long', year: 'numeric' }).toLowerCase() : null;
   const stagger = useStagger();
-  const theme: { v: Theme; t: string }[] = [{ v: 'system', t: 'System' }, { v: 'light', t: 'Light' }, { v: 'dark', t: 'Dark' }];
+  const read = library.history.length;
+  const days = streak(library.history);
+  const pace = prefs.paceMs ? `${(prefs.paceMs / 1000).toFixed(1)}s a story` : 'not set';
+  const muted = prefs.mutedSources?.length ?? 0;
   return (
     <div className="screen">
       <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <button className="link-btn lg lg-icon" aria-label="back" onClick={() => nav('/')} style={{ position: 'absolute', left: -6 }}><GlassBg /><Icon name="arrow-left" size={20} /></button>
         <span style={{ font: '600 15px/1 var(--font)' }}>Profile</span>
       </div>
-      <div className="rise" style={{ position: 'absolute', top: T(116), left: 20, right: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 18px/1 var(--font)', color: 'var(--gray)', flex: 'none' }}>
-          {user ? initials(user.name) : <Icon name="user" size={24} color="var(--gray)" />}
+      <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(100), left: 0, right: 0, bottom: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', maskImage: 'linear-gradient(transparent, #000 14px)', WebkitMaskImage: 'linear-gradient(transparent, #000 14px)' }}>
+        <button className="row-btn" onClick={() => nav(user ? '/profile/edit' : '/login')} aria-label={user ? 'edit profile' : 'log in'}
+          style={{ padding: '8px 20px 0', display: 'flex', alignItems: 'center', gap: 16, flex: 'none' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--signal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 18px/1 var(--font)', color: 'var(--signal)', flex: 'none' }}>
+            {user ? initials(user.name) : <Icon name="user" size={24} color="var(--signal)" />}
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+            <span style={{ font: '700 24px/1.1 var(--font)', letterSpacing: '-0.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name ?? 'not signed in'}</span>
+            <span style={{ font: '400 13px/1.3 var(--font)', color: 'var(--gray)' }}>{since ? `reading since ${since}` : 'log in to sync your topics, places and saves.'}</span>
+          </div>
+          <Icon name="arrow-right" size={18} color="var(--gray-2)" />
+        </button>
+        <div className="card" style={{ margin: '20px 20px 0', padding: '16px 8px', display: 'flex', alignItems: 'center', flex: 'none' }}>
+          <Stat v={read >= 200 ? '200+' : read} l="stories read" />
+          <div style={{ width: 1, height: 28, background: 'var(--rule)' }} />
+          <Stat v={library.saved.length} l="saved" />
+          <div style={{ width: 1, height: 28, background: 'var(--rule)' }} />
+          <Stat v={days} l="day streak" />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-          <span style={{ font: '700 24px/1.1 var(--font)', letterSpacing: '-0.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name ?? 'not signed in'}</span>
-          <span style={{ font: '400 13px/1 var(--font)', color: 'var(--gray)' }}>{since ? `reading since ${since}` : 'log in to sync your topics, places and saves.'}</span>
-        </div>
-      </div>
-      <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(204), left: 0, right: 0, bottom: 0, overflowY: 'auto', borderTop: '.5px solid var(--rule)', display: 'flex', flexDirection: 'column' }}>
+
+        <Section title="your feed" />
         <Row label="Topics" value={`${prefs.topics.length} followed`} onClick={() => nav('/profile/topics')} />
         <Row label="Countries" value={`${prefs.countries.length} followed`} onClick={() => nav('/profile/countries')} />
         <Row label="Places" value={home ? `${home.area}, ${home.radiusKm} km` : 'none yet'} onClick={() => nav('/places')} />
-        <Row label="Notifications" value={prefs.notifications.enabled ? `daily, ${prefs.notifications.time.replace(/^0/, '')}` : 'off'} onClick={() => nav('/profile/notifications')} />
-        <Row label="Reading History" onClick={() => nav('/history')} />
-        <Row label="Saved Stories" value={String(library.saved.length)} onClick={() => nav('/saved')} />
-        <Row label="Dark Mode">
-          <div role="radiogroup" aria-label="appearance" className="lg" style={{ display: 'flex', padding: 2, borderRadius: 50, font: '600 12px/1 var(--font)' }}>
-            <GlassBg />
-            {theme.map(o => (
-              <button key={o.v} role="radio" aria-checked={prefs.theme === o.v} className={`link-btn${prefs.theme === o.v ? ' lg lg-raised' : ''}`} onClick={() => updatePrefs({ theme: o.v })}
-                style={{ padding: '7px 12px', borderRadius: 50, color: prefs.theme === o.v ? 'var(--ink)' : 'var(--gray)', font: '600 12px/1 var(--font)' }}>{prefs.theme === o.v && <GlassBg />}{o.t}</button>
-            ))}
-          </div>
+        <Row label="Sources" value={muted ? `${muted} muted` : 'all'} onClick={() => nav('/profile/sources')} />
+
+        <Section title="reading" />
+        <Row label="Reading Pace" value={pace} onClick={() => nav('/profile/pace')} />
+        <Row label="Text Size">
+          <Segmented label="text size" value={prefs.textSize ?? 'md'} onChange={v => updatePrefs({ textSize: v })} style={{ width: 150, padding: 2 }}
+            options={[{ v: 'sm', t: 'Aa-' }, { v: 'md', t: 'Aa' }, { v: 'lg', t: 'Aa+' }]} compact />
         </Row>
+        <Row label="Feed Opens In">
+          <Segmented label="feed opens in" value={prefs.defaultView ?? 'swipe'} onChange={v => updatePrefs({ defaultView: v })} style={{ width: 150, padding: 2 }}
+            options={[{ v: 'swipe', t: 'Swipe' }, { v: 'list', t: 'List' }]} compact />
+        </Row>
+        <Row label="Haptics"><Switch label="haptics" on={prefs.haptics ?? true} onChange={v => updatePrefs({ haptics: v })} /></Row>
+        <Row label="Reduce Motion"><Switch label="reduce motion" on={!!prefs.reduceMotion} onChange={v => updatePrefs({ reduceMotion: v })} /></Row>
+        <Row label="Appearance">
+          <Segmented label="appearance" value={prefs.theme} onChange={v => updatePrefs({ theme: v })} style={{ width: 186, padding: 2 }}
+            options={[{ v: 'system', t: 'System' }, { v: 'light', t: 'Light' }, { v: 'dark', t: 'Dark' }] as { v: Theme; t: string }[]} compact />
+        </Row>
+
+        <Section title="library" />
+        <Row label="Saved Stories" value={String(library.saved.length)} onClick={() => nav('/saved')} />
+        <Row label="Reading History" value={read ? String(read) : undefined} onClick={() => nav('/history')} />
+        <Row label="Notifications" value={prefs.notifications.enabled ? `daily, ${prefs.notifications.time.replace(/^0/, '')}` : 'off'} onClick={() => nav('/profile/notifications')} />
+
+        <Section title="account" />
+        {user && <Row label="Edit Profile" value={user.email} onClick={() => nav('/profile/edit')} />}
+        <Row label="Send Feedback" onClick={() => setFeedback(true)} />
         <Row label="About The News" onClick={() => nav('/about')} />
         {user
           ? <Row label="Log Out" onClick={async () => { await logout(); nav('/welcome', { replace: true }); }}><Icon name="logout" size={18} color="var(--gray-2)" /></Row>
           : <Row label="Log In" onClick={() => nav('/login')} />}
         {/* Sits at the bottom when there's room, and scrolls with the rows on short screens. */}
-        <div style={{ marginTop: 'auto', paddingTop: 24, paddingBottom: 'calc(var(--sb) + 14px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flex: 'none' }}>
+        <div style={{ marginTop: 'auto', paddingTop: 28, paddingBottom: 'calc(var(--sb) + 14px)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flex: 'none' }}>
           <div style={{ opacity: 0.5 }}><Wordmark size="xs" /></div>
           <span style={{ font: '400 12px/1 var(--font)', color: 'var(--gray)' }}>A Lycoris Product</span>
         </div>
       </div>
+      {feedback && <FeedbackDialog context="profile" onClose={() => setFeedback(false)} />}
+    </div>
+  );
+}
+
+/** Your name (and, read-only, your email). */
+export function EditProfile() {
+  const nav = useNavigate();
+  const { user, setAccount, showToast } = useStore();
+  const [name, setName] = useState(user?.name ?? '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { if (!user) nav('/login', { replace: true }); }, [user, nav]);
+  if (!user) return null;
+  const changed = name.trim() && name.trim() !== user.name;
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!changed || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.updateMe({ name: name.trim() });
+      setAccount(r.user);
+      showToast('saved.');
+      nav('/profile');
+    } catch (err) {
+      setError(err instanceof ApiError ? (err.fields.name || err.message) : 'something went wrong. try again.');
+      setBusy(false);
+    }
+  };
+  return (
+    <form className="screen" onSubmit={save} noValidate>
+      <BackButton to="/profile" />
+      <Title sub="how you appear in The News.">edit profile.</Title>
+      <div style={{ position: 'absolute', top: T(212), left: 20, right: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <TextField label="Name" autoComplete="name" value={name} maxLength={80} onChange={e => setName(e.target.value)} error={error} disabled={busy} />
+        <TextField label="Email" icon="mail" value={user.email} readOnly disabled />
+      </div>
+      <Footer>
+        <Button type="submit" disabled={!changed} loading={busy}>{busy ? 'saving…' : 'save'}</Button>
+      </Footer>
+    </form>
+  );
+}
+
+/** Outlets in your feed. Mute one and its stories leave the queue straight away. */
+export function Sources() {
+  const { prefs, updatePrefs } = useStore();
+  const muted = prefs.mutedSources ?? [];
+  const counts = new Map<string, number>();
+  for (const s of cachedFeed()?.stories ?? []) if (!s.removed) counts.set(s.source, (counts.get(s.source) ?? 0) + 1);
+  for (const m of muted) if (!counts.has(m)) counts.set(m, 0);
+  const rows = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const toggle = (src: string, show: boolean) => updatePrefs(p => ({ mutedSources: show ? (p.mutedSources ?? []).filter(x => x !== src) : [...(p.mutedSources ?? []), src] }));
+  const stagger = useStagger();
+  return (
+    <div className="screen">
+      <BackButton to="/profile" />
+      <Title sub="turn off an outlet and its stories leave your feed. turn it back on anytime.">sources.</Title>
+      {rows.length ? (
+        <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(222), left: 0, right: 0, bottom: 0, overflowY: 'auto', borderTop: '.5px solid var(--rule)', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column' }}>
+          {rows.map(([src, n]) => (
+            <Row key={src} label={src} value={n ? `${n} today` : undefined}>
+              <Switch label={`show ${src}`} on={!muted.includes(src)} onChange={v => toggle(src, v)} />
+            </Row>
+          ))}
+        </div>
+      ) : <EmptyList title="no sources yet." body="open your feed first; the outlets in it show up here." />}
     </div>
   );
 }

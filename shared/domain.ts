@@ -3,6 +3,8 @@
 export type Coverage = 'global' | 'national' | 'state' | 'city' | 'hyper';
 export type StoryType = 'news' | 'breaking' | 'explainer' | 'local-alert' | 'opinion';
 export type Theme = 'system' | 'light' | 'dark';
+export type TextSize = 'sm' | 'md' | 'lg';
+export const TEXT_SCALE: Record<TextSize, number> = { sm: 0.9, md: 1, lg: 1.14 };
 
 export interface StoryMore {
   h: string;
@@ -69,6 +71,15 @@ export interface Prefs {
   notifications: { enabled: boolean; time: string; tz?: string };
   paceMs: number | null;
   theme: Theme;
+  /** Story text size on cards and in the reader. */
+  textSize: TextSize;
+  /** The feed opens in this view. */
+  defaultView: 'swipe' | 'list';
+  haptics: boolean;
+  /** Calms the living gradient and screen transitions. */
+  reduceMotion: boolean;
+  /** Outlets the reader never wants to see. */
+  mutedSources: string[];
   onboarded: boolean;
   updatedAt: number;
 }
@@ -148,6 +159,11 @@ export function defaultPrefs(): Prefs {
     notifications: { enabled: false, time: '08:00' },
     paceMs: null,
     theme: 'light',
+    textSize: 'md',
+    defaultView: 'swipe',
+    haptics: true,
+    reduceMotion: false,
+    mutedSources: [],
     onboarded: false,
     updatedAt: 0,
   };

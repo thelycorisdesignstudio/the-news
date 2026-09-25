@@ -113,6 +113,16 @@ const MIGRATIONS = [
    CREATE INDEX ingest_items_seen ON ingest_items(seen_at);
    ALTER TABLE stories ADD COLUMN sources INTEGER NOT NULL DEFAULT 1;
    ALTER TABLE stories ADD COLUMN ingested_at INTEGER;`,
+  `CREATE TABLE feedback (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     user_id TEXT,
+     rating INTEGER,
+     message TEXT NOT NULL,
+     context TEXT,
+     client_hash TEXT NOT NULL,
+     created_at INTEGER NOT NULL
+   );
+   CREATE INDEX feedback_client ON feedback(client_hash, created_at);`,
 ];
 
 export function openDb(path: string): DB {
