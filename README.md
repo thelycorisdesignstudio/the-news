@@ -92,6 +92,17 @@ Brand rules from the design are kept: Rethink Sans only (self-hosted via `@fonts
 - Hyperlocal stories are matched by distance from each saved place; "widen to N km" and "show {city} stories" fix an empty neighbourhood.
 - Daily notification: web push at the reader's chosen local time, sent by the server once VAPID keys are configured.
 
+## Deploy
+
+One Node process serves the API and the built app. With Docker:
+
+```bash
+docker build -t the-news .
+docker run -p 8787:8787 -v the-news-data:/data --env-file .env the-news
+```
+
+Or on any Node 22 host: `npm ci && npm run build && npm start`. Keep `DATABASE_PATH` on a persistent disk, and put it behind HTTPS with `APP_ORIGIN` set to the public URL. At startup the server warns about anything still in testing mode (dummy log in, demo helpers, a non-https origin, no Claude key). CI (`.github/workflows/ci.yml`) typechecks, runs the unit and browser tests, and builds on every push.
+
 ## Configuration
 
 See `.env.example`. The ones that matter for production:

@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+.env
+test-results
+playwright-report
+*.tsbuildinfo
+.git
+project
+chats

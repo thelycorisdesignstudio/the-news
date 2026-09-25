@@ -6,6 +6,17 @@ import { seedDemoStories } from './stories';
 import { startDailyPush } from './push';
 import { startIngest } from './ingest/pipeline';
 
+// Settings that are fine while testing but must not reach real readers.
+if (config.production) {
+  const risky = [
+    config.dummyAuth && 'DUMMY_AUTH is on: any email and password signs in (set DUMMY_AUTH=0)',
+    config.demoAuth && 'DEMO_AUTH is on: codes and reset links appear on screen (set DEMO_AUTH=0)',
+    !config.appOrigin.startsWith('https://') && `APP_ORIGIN is ${config.appOrigin}; cookies and OAuth need the public https URL`,
+    config.news.live && !config.news.anthropicKey && 'ANTHROPIC_API_KEY is not set: cards use the extractive writer',
+  ].filter(Boolean);
+  for (const r of risky) console.warn(`⚠ ${r}`);
+}
+
 const db = openDb(config.databasePath);
 if (config.seedDemo) seedDemoStories(db);
 
