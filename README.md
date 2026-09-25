@@ -43,12 +43,12 @@ Every screen in the v2 design is built and wired to real data (see all of them i
 
 | Design | Where |
 | --- | --- |
-| Logo (wordmark + Nine symbol), signature gradient | `src/components/Brand.tsx`, `.grad-bg` in `src/styles.css`, app icons in `public/`, `/brand` page |
+| Logo (wordmark + Nine symbol), signature gradient | `src/components/Brand.tsx`, `.grad-bg` in `src/styles.css`, app icons in `public/` |
 | Live swipe feed, 07–13 card states | `src/screens/Feed.tsx`, `src/components/FeedCard.tsx` |
 | C1–C8 account screens | `src/screens/Account.tsx` (+ reset-password and OAuth return) |
 | 01–06, 04b, 04c onboarding | `src/screens/Launch.tsx`, `src/screens/Onboarding.tsx` |
 | F1 filters, F2 add countries, F3 places | `Feed.tsx` (`FilterSheet`), `src/screens/Places.tsx` |
-| L1–L6 loading and skeletons | `FeedSkeleton`, `ListSkeleton`, reader sheet, pull to refresh, `FindingLocal`, component states on `/brand` |
+| L1–L6 loading and skeletons | `FeedSkeleton`, `ListSkeleton`, reader sheet, pull to refresh, `FindingLocal` |
 | E1–E8 error and empty states | `Feed.tsx` (offline, didn't load, removed, nothing nearby), `LocationOff`, search no-results, `SessionExpired` in `App.tsx` |
 | 14–17 list, reader, profile, saved | `Feed.tsx`, `src/screens/Profile.tsx` |
 

@@ -207,7 +207,7 @@ export function About() {
         </p>
         <span style={{ font: '400 13px/1.4 var(--font)', color: 'var(--gray)' }}>nine seconds. the whole picture.</span>
         <div style={{ borderTop: '.5px solid var(--rule)', marginTop: 8 }}>
-          {[['Privacy Policy', '/privacy'], ['Terms of Service', '/terms'], ['Brand & components', '/brand']].map(([l, to]) => (
+          {[['Privacy Policy', '/privacy'], ['Terms of Service', '/terms']].map(([l, to]) => (
             <Link key={to} to={to} style={{ height: 56, display: 'flex', alignItems: 'center', borderBottom: '.5px solid var(--rule)', font: '500 15px/1 var(--font)', color: 'var(--ink)' }}>
               <span style={{ flex: 1 }}>{l}</span><Icon name="arrow-right" size={18} color="var(--gray-2)" />
             </Link>
@@ -276,58 +276,5 @@ export function Terms() {
       <H>changes</H>
       <p>We may update these terms; if the changes are significant we'll tell you in the app first.</p>
     </Legal>
-  );
-}
-
-/** The logo system and component states (L6), as a living reference. */
-export function BrandPage() {
-  const swatches = ['#E8AE8C', '#F0BF9C', '#EBD6C8', '#DADAD8', '#C9DCE8', '#EED4B2'];
-  const S = ({ t, children }: { t: string; children: ReactNode }) => <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}><span className="eyebrow">{t}</span>{children}</div>;
-  return (
-    <div className="screen">
-      <BackButton />
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(108), left: 20, right: 20, bottom: 0, overflowY: 'auto', paddingBottom: 'calc(var(--sb) + 24px)', display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <h2 style={{ margin: 0, font: '700 28px/1.15 var(--font)', letterSpacing: '-0.03em' }}>brand &amp; components.</h2>
-        <S t="signature gradient">
-          <div style={{ height: 140, borderRadius: 20, background: 'linear-gradient(125deg,#E8AE8C 0%,#F0BF9C 18%,#EBD6C8 34%,#DADAD8 48%,#C9DCE8 62%,#E3E9E8 76%,#EED4B2 90%,#E8AE8C 100%)', backgroundSize: '300% 300%', animation: 'tnGrad 16s ease-in-out infinite alternate', display: 'flex', alignItems: 'flex-end', padding: 20 }}><Wordmark size="md" /></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
-            {swatches.map(c => <div key={c} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><div style={{ height: 32, borderRadius: 8, background: c }} /><span style={{ font: '500 9px/1 var(--font)', color: 'var(--gray)' }}>{c}</span></div>)}
-          </div>
-        </S>
-        <S t="wordmark">
-          <div className="card" style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FAFAF8' }}><Wordmark size="xl" /></div>
-          <div style={{ height: 90, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0A0A0A' }}><Wordmark size="lg" inverse /></div>
-        </S>
-        <S t="logo">
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}><LogoNine size={80} /><LogoNine size={80} dark /><LogoNine size={48} /><LogoNine size={32} /><LogoNine size={20} /></div>
-        </S>
-        <S t="primary button">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <Button>default</Button><Button style={{ background: 'var(--signal-press)', transform: 'scale(.98)' }}>pressed</Button>
-            <Button loading>loading…</Button><Button disabled>disabled</Button>
-          </div>
-        </S>
-        <S t="secondary button">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}><Button variant="secondary">default</Button><Button variant="secondary" disabled>disabled</Button></div>
-        </S>
-        <S t="text field">
-          <TextField label="Default" placeholder="name@example.com" readOnly />
-          <TextField label="Error" defaultValue="maya.chen@gmail" error="enter a full email address." readOnly />
-          <TextField label="Disabled" defaultValue="maya.chen@gmail.com" disabled />
-        </S>
-        <S t="chips">
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span className="chip">default</span>
-            <span className="chip is-on" style={{ animation: 'none' }}><Icon name="tick" size={12} color="var(--signal)" />selected</span>
-            <span className="chip is-off-disabled">disabled</span>
-          </div>
-        </S>
-        <S t="toasts">
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span className="toast">saved to reading list</span><span className="toast">copied.</span><span className="toast">no connection · showing stories from 8:02</span>
-          </div>
-        </S>
-      </div>
-    </div>
   );
 }

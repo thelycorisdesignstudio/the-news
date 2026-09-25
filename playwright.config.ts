@@ -14,7 +14,7 @@ export default defineConfig({
     permissions: ['geolocation'],
   },
   webServer: {
-    command: 'mkdir -p test-results && rm -f data/e2e.db* && NODE_ENV=production PORT=8788 APP_ORIGIN=http://localhost:8788 DATABASE_PATH=data/e2e.db node --import tsx server/index.ts > test-results/server.log 2>&1',
+    command: 'mkdir -p test-results && rm -f data/e2e.db* && NODE_ENV=production LIVE_NEWS=0 SEED_DEMO=1 PORT=8788 APP_ORIGIN=http://localhost:8788 DATABASE_PATH=data/e2e.db node --import tsx server/index.ts > test-results/server.log 2>&1',
     url: 'http://localhost:8788/api/health',
     reuseExistingServer: false,
   },

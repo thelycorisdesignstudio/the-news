@@ -10,7 +10,7 @@ import { Feed } from './screens/Feed';
 import { Landing, Splash } from './screens/Launch';
 import { Countries, Coverage, FindingLocal, LocationOff, Notifications, Pace, Topics, Transition } from './screens/Onboarding';
 import { AddCountries, AddPlace, PlaceDetail, Places } from './screens/Places';
-import { About, BrandPage, History, NotificationSettings, Privacy, Profile, Saved, Terms } from './screens/Profile';
+import { About, History, NotificationSettings, Privacy, Profile, Saved, Terms } from './screens/Profile';
 
 function Home() {
   const { prefs, user } = useStore();
@@ -133,7 +133,6 @@ function Shell() {
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/brand" element={<BrandPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       )}</RouteFade>
