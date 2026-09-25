@@ -35,6 +35,19 @@ function useOAuth() {
   };
 }
 
+/** Whether log in and sign up are dummies for now (any email and password signs straight in). */
+let modeOnce: Promise<boolean> | null = null;
+function useDummyAuth() {
+  const [dummy, setDummy] = useState(false);
+  useEffect(() => {
+    modeOnce ??= api.providers().then(p => !!p.dummy).catch(() => { modeOnce = null; return false; });
+    let live = true;
+    void modeOnce.then(d => { if (live) setDummy(d); });
+    return () => { live = false; };
+  }, []);
+  return dummy;
+}
+
 /** Small note shown only while auth runs in demo mode. */
 export function DemoNote({ children, action, onAction }: { children: React.ReactNode; action?: string; onAction?: () => void }) {
   return (
@@ -105,17 +118,20 @@ export function StrengthMeter({ password }: { password: string }) {
 /** C2 / C5 · Sign up. Errors appear on blur; submit stays disabled until everything is valid. */
 export function SignUp() {
   const nav = useNavigate();
+  const after = useAfterAuth();
+  const dummy = useDummyAuth();
   const [f, setF] = useState({ name: '', email: '', password: '', terms: false });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [server, setServer] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Dummy sign up only needs an email; the real one needs every field and the terms.
   const errs = {
-    name: !f.name.trim() ? 'enter your name.' : null,
+    name: !dummy && !f.name.trim() ? 'enter your name.' : null,
     email: !EMAIL_RE.test(f.email.trim()) ? 'enter a full email address, like name@example.com.' : null,
-    password: !isValidPassword(f.password) ? PASSWORD_RULE : null,
+    password: !dummy && !isValidPassword(f.password) ? PASSWORD_RULE : null,
   };
-  const valid = !errs.name && !errs.email && !errs.password && f.terms;
+  const valid = !errs.name && !errs.email && !errs.password && (dummy || f.terms);
   const stagger = useStagger();
   const show = (k: keyof typeof errs) => server[k] || (touched[k] ? errs[k] : null);
   const set = (k: keyof typeof f, v: string | boolean) => { setF(s => ({ ...s, [k]: v })); setServer(s => ({ ...s, [k]: '' })); };
@@ -127,6 +143,7 @@ export function SignUp() {
     setBanner(null);
     try {
       const r = await api.signup({ name: f.name.trim(), email: f.email.trim(), password: f.password, terms: true });
+      if ('user' in r) return await after(r.user);
       nav('/verify', { state: { email: r.email, resendIn: r.resendIn, devCode: r.devCode } });
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fields).length) setServer(err.fields);
@@ -142,6 +159,7 @@ export function SignUp() {
       <Title>create your account.</Title>
       <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(168), left: 20, right: 20, bottom: 'calc(var(--sb) + 110px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 8 }}>
         {banner && <Banner>{banner}</Banner>}
+        {dummy && <DemoNote>demo mode · any email and password creates your account. no code needed.</DemoNote>}
         <TextField label="Name" autoComplete="name" value={f.name} disabled={busy} onChange={e => set('name', e.target.value)} onBlur={() => setTouched(t => ({ ...t, name: true }))} error={show('name')} />
         <TextField label="Email" icon="mail" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" value={f.email} disabled={busy}
           onChange={e => set('email', e.target.value)} onBlur={() => setTouched(t => ({ ...t, email: true }))} error={show('email')} />
@@ -269,6 +287,7 @@ export function Verify() {
 /** C3 / C4 / C6 · Log in, the wrong-password state, and the submitting state. */
 export function LogIn() {
   const nav = useNavigate();
+  const dummy = useDummyAuth();
   const oauth = useOAuth();
   const after = useAfterAuth();
   const [email, setEmail] = useState('');
@@ -309,6 +328,7 @@ export function LogIn() {
       <Title>welcome back.</Title>
       <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(168), left: 20, right: 20, bottom: 0, paddingBottom: 'calc(var(--sb) + 16px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {banner && <Banner>{banner}</Banner>}
+        {dummy && !banner && <DemoNote>demo mode · any email and password logs you in.</DemoNote>}
         <TextField label="Email" icon="mail" type="email" inputMode="email" autoComplete="username" autoCapitalize="none" value={email} disabled={busy}
           onChange={e => { setEmail(e.target.value); setFields(f => ({ ...f, email: '' })); }} error={fields.email || null} />
         <TextField label="Password" icon="lock" secret autoComplete="current-password" value={password} disabled={busy}

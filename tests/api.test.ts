@@ -14,6 +14,8 @@ let sent: Mail[];
 let app: ReturnType<typeof createApp>;
 
 beforeEach(() => {
+  // These tests cover real accounts; dummy auth has its own block below.
+  config.dummyAuth = false;
   db = openDb(':memory:');
   seedDemoStories(db);
   sent = [];
@@ -200,5 +202,37 @@ describe('nine-second summaries', () => {
     const long = await request(app).post('/api/admin/stories').set('Authorization', 'Bearer test-admin').send({ stories: [{ ...base, summary: 'word '.repeat(60) }] }).expect(400);
     expect(long.body.issues[0]).toContain('nine seconds');
     await request(app).post('/api/admin/stories').set('Authorization', 'Bearer test-admin').send({ stories: [{ ...base, summary: 'word '.repeat(30) }] }).expect(200);
+  });
+});
+
+describe('dummy auth (for now)', () => {
+  beforeEach(() => { config.dummyAuth = true; });
+
+  it('signs up with just an email: no code, straight into a session', async () => {
+    const agent = request.agent(app);
+    const r = await agent.post('/api/auth/signup').send({ email: 'new.reader@example.com', password: 'x' }).expect(201);
+    expect(r.body.user).toMatchObject({ email: 'new.reader@example.com', name: 'New Reader', verified: true });
+    expect(sent).toHaveLength(0);
+    const me = await agent.get('/api/auth/me').expect(200);
+    expect(me.body.user.email).toBe('new.reader@example.com');
+  });
+
+  it('logs in with any password, creating the account if needed, and never locks', async () => {
+    const agent = request.agent(app);
+    for (const pw of ['a', 'b', 'c', 'd']) {
+      const r = await agent.post('/api/auth/login').send({ email: 'Anyone@Example.com', password: pw }).expect(200);
+      expect(r.body.user.verified).toBe(true);
+    }
+    const count = db.prepare('SELECT COUNT(*) n FROM users').get() as { n: number };
+    expect(count.n).toBe(1);
+  });
+
+  it('still rejects an address that is not an email', async () => {
+    await request(app).post('/api/auth/login').send({ email: 'nope', password: 'x' }).expect(400);
+  });
+
+  it('tells the client it is in dummy mode', async () => {
+    const r = await request(app).get('/api/auth/providers').expect(200);
+    expect(r.body.dummy).toBe(true);
   });
 });

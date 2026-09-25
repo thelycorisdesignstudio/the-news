@@ -1,13 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-
-/** Reads the verification code the dev mailer printed to the server log (see playwright.config.ts). */
-async function codeFor(page: Page, email: string) {
-  await page.waitForTimeout(200);
-  const log = readFileSync('test-results/server.log', 'utf8');
-  const hits = [...log.matchAll(new RegExp(`to=${email.replace(/[.@]/g, '\\$&')} subject="(\\d{6})`, 'g'))];
-  return hits.at(-1)![1];
-}
+import { test, expect } from '@playwright/test';
 
 test('first launch through onboarding to the swipe feed', async ({ page }) => {
   const email = `reader${Date.now()}@example.com`;
@@ -16,21 +7,16 @@ test('first launch through onboarding to the swipe feed', async ({ page }) => {
   await page.getByRole('button', { name: 'start reading free' }).click();
   await page.getByRole('button', { name: 'Continue with email' }).click();
 
-  // C5: errors on blur, submit disabled until valid.
+  // Dummy sign up: only the email is checked, then straight into onboarding (no code).
+  await expect(page.getByText('demo mode · any email and password creates your account. no code needed.')).toBeVisible();
   await page.getByLabel('Name').fill('Maya Chen');
   await page.getByLabel('Email').fill('maya@example');
   await page.getByLabel('Password', { exact: true }).click();
   await expect(page.getByText('enter a full email address, like name@example.com.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'create account' })).toBeDisabled();
   await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill('Longpass123');
-  await page.locator('label:has(input[type=checkbox])').click();
+  await page.getByLabel('Password', { exact: true }).fill('x');
   await page.getByRole('button', { name: 'create account' }).click();
-
-  // C8
-  await expect(page.getByRole('heading', { name: 'check your inbox.' })).toBeVisible();
-  await page.waitForTimeout(300);
-  await page.getByLabel('6-digit code').fill(await codeFor(page, email));
 
   // 03 → 04
   await expect(page.getByRole('heading', { name: 'what do you follow?' })).toBeVisible({ timeout: 5000 });
@@ -85,13 +71,12 @@ test('first launch through onboarding to the swipe feed', async ({ page }) => {
   await expect(page.getByText('1 story')).toBeVisible();
 });
 
-test('wrong password counts down, then pauses', async ({ page, request }) => {
-  const email = `lock${Date.now()}@example.com`;
-  await request.post('/api/auth/signup', { data: { name: 'L', email, password: 'Longpass123', terms: true } });
+test('dummy log in: any email and password signs straight in', async ({ page }) => {
   await page.goto('/login');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill('nope12345');
+  await expect(page.getByText('demo mode · any email and password logs you in.')).toBeVisible();
+  await page.getByLabel('Email').fill(`someone${Date.now()}@example.com`);
+  await page.getByLabel('Password', { exact: true }).fill('anything');
   await page.getByRole('button', { name: 'log in' }).click();
-  await expect(page.getByText("that email and password don't match. check them and try again.")).toBeVisible();
-  await expect(page.getByText('incorrect password. 2 attempts left before a 15-minute pause.')).toBeVisible();
+  // A new account has no topics yet, so it lands in onboarding.
+  await expect(page.getByRole('heading', { name: 'what do you follow?' })).toBeVisible({ timeout: 5000 });
 });

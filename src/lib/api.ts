@@ -38,9 +38,9 @@ export interface LibraryPayload {
 
 export const api = {
   me: () => call<{ user: User | null; sessionExpired: boolean }>('GET', '/auth/me'),
-  providers: () => call<{ google: boolean; apple: boolean; demo: boolean }>('GET', '/auth/providers'),
+  providers: () => call<{ google: boolean; apple: boolean; demo: boolean; dummy?: boolean }>('GET', '/auth/providers'),
   demo: () => call<{ user: User }>('POST', '/auth/demo'),
-  signup: (b: { name: string; email: string; password: string; terms: boolean }) => call<{ pending: true; email: string; resendIn: number; devCode?: string }>('POST', '/auth/signup', b),
+  signup: (b: { name: string; email: string; password: string; terms: boolean }) => call<{ user: User } | { pending: true; email: string; resendIn: number; devCode?: string }>('POST', '/auth/signup', b),
   verify: (email: string, code: string) => call<{ user: User }>('POST', '/auth/verify', { email, code }),
   resend: (email: string) => call<{ resendIn: number; devCode?: string }>('POST', '/auth/resend', { email }),
   login: (email: string, password: string) => call<{ user: User }>('POST', '/auth/login', { email, password }),

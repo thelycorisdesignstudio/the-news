@@ -14,12 +14,14 @@ npm run dev                 # API on :8787, app on http://localhost:5173
 
 Sign-up codes and password-reset links are printed in the API log until `SMTP_URL` is set.
 
-**Auth is in demo mode by default** (`DEMO_AUTH`, on unless set to `0`), so testing needs no inbox or OAuth setup:
-- the verify screen shows your 6-digit code with a one-tap "fill it in";
+**Log in and sign up are dummies for now** (`DUMMY_AUTH`, on unless set to `0`): any email and password signs straight in. An unknown email gets an account on the spot, and there's no verification code and no lockout. Both screens say so in a small note.
+
+**Auth is also in demo mode by default** (`DEMO_AUTH`, on unless set to `0`), so testing needs no inbox or OAuth setup:
+- with `DUMMY_AUTH=0`, the verify screen shows your 6-digit code with a one-tap "fill it in";
 - forgot-password offers the reset link right on screen;
 - "Continue with Apple / Google" signs you straight in as a ready-made demo reader.
 
-Set `DEMO_AUTH=0` before launch; everything else (hashing, sessions, lockout) is already the production path.
+Set `DUMMY_AUTH=0` and `DEMO_AUTH=0` before launch; everything else (hashing, sessions, lockout) is already the production path.
 
 Production:
 

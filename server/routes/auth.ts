@@ -50,7 +50,26 @@ export function authRoutes(db: DB, mail: Mailer) {
   }
   const dev = (extra: Record<string, unknown>) => (config.demoAuth ? extra : {});
 
+  /** Dummy auth: the account for this email, created and verified on the spot if needed. */
+  function dummyUser(addr: string, name?: string) {
+    let user = findUserByEmail(db, addr);
+    if (!user) {
+      const fallback = addr.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).trim() || 'Reader';
+      db.prepare('INSERT INTO users (id, name, email, verified, created_at) VALUES (?, ?, ?, 1, ?)').run(newId(), (name || fallback).slice(0, 80), addr, new Date().toISOString());
+    } else if (!user.verified || (name && !user.name)) {
+      db.prepare('UPDATE users SET verified = 1, name = COALESCE(NULLIF(?, \'\'), name) WHERE id = ?').run(name ?? '', user.id);
+    }
+    user = findUserByEmail(db, addr)!;
+    return user;
+  }
+
   r.post('/signup', async (req, res) => {
+    if (config.dummyAuth) {
+      const body = parse(z.object({ name: z.string().trim().max(80).optional(), email, password: z.string().max(200).optional() }).passthrough(), req.body);
+      const user = dummyUser(body.email, body.name);
+      createSession(db, res, user.id);
+      return res.status(201).json({ user: toUser(user) });
+    }
     const body = parse(z.object({
       name: z.string().trim().min(1, 'enter your name.').max(80),
       email,
@@ -104,6 +123,11 @@ export function authRoutes(db: DB, mail: Mailer) {
 
   r.post('/login', async (req, res) => {
     const body = parse(z.object({ email, password: z.string().min(1, 'enter your password.').max(200) }), req.body);
+    if (config.dummyAuth) {
+      const user = dummyUser(body.email);
+      createSession(db, res, user.id);
+      return res.json({ user: toUser(user) });
+    }
     const now = Date.now();
     const att = db.prepare('SELECT failed, locked_until FROM login_attempts WHERE email = ?').get(body.email) as
       { failed: number; locked_until: number } | undefined;

@@ -43,6 +43,11 @@ export const config = {
    * Apple/Google (when not configured) sign you in as a demo reader. Set DEMO_AUTH=0 in production.
    */
   demoAuth: env.DEMO_AUTH !== '0',
+  /**
+   * Dummy log in and sign up, for now: any email and password signs straight in (an unknown email gets an
+   * account on the spot), with no verification code and no lockout. DUMMY_AUTH=0 restores real accounts.
+   */
+  dummyAuth: env.DUMMY_AUTH !== '0',
   smtpUrl: env.SMTP_URL || '',
   mailFrom: env.MAIL_FROM || 'The News <hello@thenews.app>',
   google: { clientId: env.GOOGLE_CLIENT_ID || '', clientSecret: env.GOOGLE_CLIENT_SECRET || '' },
