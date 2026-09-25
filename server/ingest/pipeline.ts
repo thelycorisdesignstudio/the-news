@@ -59,6 +59,16 @@ async function pool<T>(items: T[], n: number, fn: (t: T) => Promise<void>) {
 interface FeedStateRow { source_id: string; etag: string | null; last_modified: string | null; last_fetch_at: number | null; failures: number }
 interface PendingRow { url_hash: string; source_id: string; title_key: string; attempts: number; payload: string; published_at: string | null }
 
+/**
+ * Items gathered elsewhere (an agent-reach agent with Twitter or Reddit logins, a newsroom tool) go
+ * through the same dedupe, write-up and publishing as polled feeds.
+ */
+export async function ingestPushed(db: DB, src: { name: string; level?: Source['level']; country?: string; beat?: string }, items: FeedItem[], deps: IngestDeps = {}) {
+  const id = `push-${src.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'source'}`;
+  const source: Source = { id, name: src.name, url: `push:${id}`, kind: 'exa', level: src.level ?? 'global', country: src.country, beat: src.beat, everyMin: 0 };
+  return runCycle(db, { ...deps, sources: [source], search: async () => items, force: true });
+}
+
 /** A feed is due after its interval, backing off exponentially (up to 32×) while it keeps failing. */
 export function isDue(src: Source, st: FeedStateRow | undefined, now: number) {
   if (!st?.last_fetch_at) return true;
@@ -137,6 +147,8 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
   // Copies of a story that is being written up in this same cycle; they're folded in once it's published.
   const followers = new Map<string, PendingRow[]>();
   for (const row of pending) {
+    // Rows from sources outside this run (another channel, a push) wait for their own run.
+    if (!byId.has(row.source_id)) continue;
     const onWire = recent.find(r => similarity(r.title_key, row.title_key) >= SAME_STORY);
     if (onWire) {
       // Another outlet on a story already published: count it, don't write it twice.

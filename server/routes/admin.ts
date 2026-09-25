@@ -5,7 +5,7 @@ import type { DB } from '../db';
 import { config } from '../config';
 import { HttpError } from '../auth';
 import { removeStory, upsertStories } from '../stories';
-import { agentReachDoctor, runCycle, sourceHealth } from '../ingest/pipeline';
+import { agentReachDoctor, ingestPushed, runCycle, sourceHealth } from '../ingest/pipeline';
 import { SUMMARY_MAX_WORDS, wordCount } from '../../shared/domain';
 
 const s = z.string().max(4000);
@@ -36,6 +36,27 @@ export function adminRoutes(db: DB) {
   // Live ingestion: per-feed health (plus agent-reach's own doctor report when installed), and a manual run.
   r.get('/sources', async (_req, res) => {
     res.json({ live: config.news.live, writer: config.news.anthropicKey ? config.news.model : 'extractive', ...sourceHealth(db), agentReach: await agentReachDoctor() });
+  });
+  // Push channel: items collected anywhere run through the same pipeline as polled feeds.
+  const pushed = z.object({
+    source: z.object({
+      name: z.string().trim().min(1).max(60),
+      level: z.enum(['global', 'national', 'state', 'city', 'hyper']).optional(),
+      country: z.string().regex(/^[A-Z]{2}$/).optional(),
+      beat: z.string().max(40).optional(),
+    }),
+    items: z.array(z.object({
+      title: z.string().trim().min(1).max(300),
+      url: z.string().url().refine(u => /^https?:/.test(u), 'http(s) only'),
+      excerpt: z.string().max(4000).default(''),
+      publishedAt: z.string().datetime().nullable().default(null),
+      outlet: z.string().max(80).optional(),
+    })).min(1).max(200),
+  });
+  r.post('/ingest/items', async (req, res) => {
+    const body = pushed.safeParse(req.body);
+    if (!body.success) throw new HttpError(400, 'invalid items.', { issues: body.error.issues.slice(0, 10).map(i => `${i.path.join('.')}: ${i.message}`) });
+    res.json(await ingestPushed(db, body.data.source, body.data.items));
   });
   r.get('/feedback', (_req, res) => {
     res.json({ feedback: db.prepare(`SELECT f.id, f.rating, f.message, f.context, f.created_at AS createdAt, u.email

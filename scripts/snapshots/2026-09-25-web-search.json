@@ -1,0 +1,143 @@
+{
+  "note": "Real headlines gathered by web search on 2026-09-25 from inside a sandbox whose network blocks the news feeds. Every excerpt restates what the linked outlet reported; undated items carry publishedAt null (the pipeline stamps them with the time found). Push with: node scripts/push-items.mjs scripts/snapshots/2026-09-25-web-search.json",
+  "batches": [
+    {
+      "source": { "name": "Yahoo Finance", "level": "global", "beat": "Markets" },
+      "items": [
+        {
+          "title": "Dow, S&P 500 and Nasdaq notch weekly wins as market shrugs off bond sell-off",
+          "url": "https://finance.yahoo.com/markets/live/stock-market-today-friday-september-25-dow-sp-500-nasdaq-081738529.html",
+          "excerpt": "The Dow Jones Industrial Average rose 0.9% on Friday while the S&P 500 and the Nasdaq Composite gained about 0.5%, snapping the Dow's three-week losing streak and giving all three indexes a weekly win. Akamai Technologies rose 3% after announcing a multiyear deal with Anthropic.",
+          "publishedAt": "2026-09-25T20:05:00Z",
+          "outlet": "Yahoo Finance"
+        },
+        {
+          "title": "10-year Treasury yield climbs to 5.18%, its highest since the financial crisis",
+          "url": "https://finance.yahoo.com/markets/stocks/articles/stock-market-today-sept-25-134126022.html",
+          "excerpt": "The 10-year Treasury yield climbed to 5.18% on Friday, its highest level since the global financial crisis, amid inflation concerns. Oil fell, with WTI crude futures at $92 a barrel and Brent trading below $98.",
+          "publishedAt": "2026-09-25T13:41:00Z",
+          "outlet": "Yahoo Finance"
+        },
+        {
+          "title": "Cracker Barrel shares jump 4.5% after earnings beat",
+          "url": "https://finance.yahoo.com/markets/stocks/articles/company-news-sep-24-2026-123900390.html",
+          "excerpt": "Cracker Barrel Old Country Store shares jumped 4.5% after the company reported fourth-quarter fiscal 2026 earnings of $0.99 a share, well above the consensus estimate of $0.20.",
+          "publishedAt": "2026-09-24T12:39:00Z",
+          "outlet": "Yahoo Finance"
+        }
+      ]
+    },
+    {
+      "source": { "name": "India TV News", "level": "national", "country": "IN", "beat": "Markets" },
+      "items": [
+        {
+          "title": "Sensex and Nifty open flat as high US bond yields weigh; IT stocks drag",
+          "url": "https://www.indiatvnews.com/business/markets/25-september-2026-stock-market-updates-sensex-nifty-flat-amid-mixed-global-cues-it-stocks-drag-2026-09-25-1055235",
+          "excerpt": "India's Sensex and Nifty opened largely flat on Friday amid mixed global cues as elevated US bond yields kept risk appetite restrained. Foreign institutional investors sold equities worth Rs 5,027.36 crore on Thursday while domestic institutions bought Rs 4,301.18 crore.",
+          "publishedAt": "2026-09-25T04:00:00Z",
+          "outlet": "India TV News"
+        }
+      ]
+    },
+    {
+      "source": { "name": "Just Security", "level": "global", "beat": "World" },
+      "items": [
+        {
+          "title": "Houthis say they launched missile and drone attacks on Riyadh and Aramco facilities",
+          "url": "https://www.justsecurity.org/158876/early-edition-september-25-2026/",
+          "excerpt": "Yemen's Iran-aligned Houthis said they launched missile and drone attacks on a sensitive target in Riyadh and on Saudi Aramco facilities in Yanbu, after Saudi Arabia intercepted six ballistic missiles fired towards Taif and Yanbu. Saudi, Turkish and Pakistani military chiefs are set to meet under a joint defense pact.",
+          "publishedAt": "2026-09-25T11:00:00Z",
+          "outlet": "Just Security"
+        }
+      ]
+    },
+    {
+      "source": { "name": "TechCrunch", "level": "global" },
+      "items": [
+        {
+          "title": "Tesla starts delivering its electric Semi after nearly a decade of delays",
+          "url": "https://techcrunch.com/2026/09/25/tesla-finally-moves-to-electrify-trucking-after-a-decade-of-work-and-delays/",
+          "excerpt": "Tesla is handing over the first of its all-electric Semi trucks to customers after nearly a decade of delays. The truck has a 500-mile range, and Tesla says it plans to make 50,000 units a year.",
+          "publishedAt": "2026-09-25T15:00:00Z",
+          "outlet": "TechCrunch"
+        },
+        {
+          "title": "Bitget hit by $350 million exploit, the largest crypto hack of 2026",
+          "url": "https://techcrunch.com/latest/",
+          "excerpt": "Crypto exchange Bitget was hit by a $350 million exploit, the largest cryptocurrency hack of 2026, as security for digital assets and AI-native systems draws heavy investor attention.",
+          "publishedAt": null,
+          "outlet": "TechCrunch"
+        },
+        {
+          "title": "Databricks buys spreadsheet startup Row Zero to extend its AI coworker Genie",
+          "url": "https://techcrunch.com/category/artificial-intelligence/",
+          "excerpt": "Databricks acquired spreadsheet startup Row Zero to expand the capabilities of Genie, its AI coworker for enterprise data work.",
+          "publishedAt": null,
+          "outlet": "TechCrunch"
+        }
+      ]
+    },
+    {
+      "source": { "name": "World Health Organization", "level": "global", "beat": "Health" },
+      "items": [
+        {
+          "title": "Bundibugyo virus outbreak in DR Congo passes 6,700 confirmed cases",
+          "url": "https://www.who.int/emergencies/disease-outbreak-news/item/2026-DON617",
+          "excerpt": "The Democratic Republic of the Congo had reported 6,757 confirmed cases of Bundibugyo virus disease, including 3,267 deaths, as of September 7, a fatality ratio of 48.3%. The outbreak has spread to 61 health zones in six provinces, with cases also in Uganda and France. There is no vaccine or specific treatment for this Ebola species.",
+          "publishedAt": null,
+          "outlet": "World Health Organization"
+        }
+      ]
+    },
+    {
+      "source": { "name": "NASA", "level": "global", "beat": "Space" },
+      "items": [
+        {
+          "title": "NASA and SpaceX poll go to continue preparing Crew-13 for launch",
+          "url": "https://www.nasa.gov/blogs/commercialcrew/2026/09/25/nasa-spacex-proceed-toward-crew-13-launch/",
+          "excerpt": "NASA, SpaceX and international partners held a flight readiness review at Kennedy Space Center and polled go to continue preparing the Crew-13 mission to the International Space Station, targeted for early October.",
+          "publishedAt": "2026-09-25T16:00:00Z",
+          "outlet": "NASA"
+        }
+      ]
+    },
+    {
+      "source": { "name": "ScienceDaily", "level": "global", "beat": "Science" },
+      "items": [
+        {
+          "title": "More REM sleep linked to lower risk of 83 diseases in study of 95,000 people",
+          "url": "https://www.sciencedaily.com/breaking/",
+          "excerpt": "A large study tracking more than 95,000 people suggests that more REM sleep is linked to a lower risk of 83 diseases.",
+          "publishedAt": null,
+          "outlet": "ScienceDaily"
+        },
+        {
+          "title": "240-million-year-old animal from Tanzania forces a rethink of the early dinosaur timeline",
+          "url": "https://www.sciencedaily.com/news/",
+          "excerpt": "A newly identified 240-million-year-old animal from Tanzania is forcing scientists to rethink the timeline of early dinosaur evolution.",
+          "publishedAt": null,
+          "outlet": "ScienceDaily"
+        },
+        {
+          "title": "Part of the Atlantic Ocean's overturning circulation has been weakening for two decades",
+          "url": "https://www.sciencedaily.com/news/earth_climate/earth_science/",
+          "excerpt": "Scientists found strong observational evidence that a key part of the Atlantic Meridional Overturning Circulation has been weakening across a wide stretch of ocean for nearly two decades.",
+          "publishedAt": null,
+          "outlet": "ScienceDaily"
+        }
+      ]
+    },
+    {
+      "source": { "name": "SciTechDaily", "level": "global", "beat": "Space" },
+      "items": [
+        {
+          "title": "NASA's Roman Space Telescope may have fuel for 22 years of science",
+          "url": "https://scitechdaily.com/",
+          "excerpt": "NASA's Roman Space Telescope may now have enough fuel for at least 22 years of science, more than double its original ten-year design life.",
+          "publishedAt": null,
+          "outlet": "SciTechDaily"
+        }
+      ]
+    }
+  ]
+}

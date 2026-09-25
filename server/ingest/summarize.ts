@@ -154,7 +154,8 @@ export function fitWords(text: string, max: number): string {
 const TECH_RULES: [string, RegExp][] = [
   ['AI Hardware', /\b(nvidia|gpus?|chips?|chipmakers?|semiconductors?|tsmc|amd|intel|blackwell|data ?cent(er|re)s?|accelerators?|wafers?|foundr(y|ies))\b/i],
   ['Quantum Computing', /\b(quantum|qubits?)\b/i],
-  ['Robotics', /\b(robot\w*|humanoids?|drones?|autonomous (vehicles?|cars?)|self-driving|waymo)\b/i],
+  // Drones alone are usually war reporting; only delivery and consumer drones are robotics.
+  ['Robotics', /\b(robot\w*|humanoids?|delivery drones?|drone deliver\w*|autonomous (vehicles?|cars?)|self-driving|waymo)\b/i],
   ['Cybersecurity', /\b(hack(s|ed|ers?|ing)?|data breach|ransomware|malware|vulnerabilit(y|ies)|cyber\w*|phishing|zero-day|exploits?)\b/i],
   ['Space', /\b(nasa|spacex|rockets?|orbit(al|ing)?|satellites?|lunar|moon landing|mars|launch pad|starship|isro|esa|astronauts?)\b/i],
   ['Climate Tech', /\b(solar|batter(y|ies)|electric vehicles?|\bevs?\b|renewables?|clean energy|carbon capture|emissions|power grid|nuclear (power|reactor)|fusion)\b/i],
@@ -207,7 +208,8 @@ export function classify(text: string, opts: { local?: boolean; beat?: string } 
 export function extractive(c: Candidate): Draft | null {
   const blob = `${c.title}. ${c.excerpt}`;
   const local = c.source.level === 'city';
-  const topic = classify(blob, { local, beat: c.source.beat });
+  // The headline says what the story is about; the excerpt only settles what the headline doesn't.
+  const topic = classify(c.title, { local }) ?? classify(blob, { local, beat: c.source.beat });
   if (!topic) return null;
   const source = (c.article || c.excerpt).replace(/\s+/g, ' ').trim();
   // A teaser that just repeats the headline isn't a summary.

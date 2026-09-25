@@ -310,3 +310,36 @@ describe('dedupe keeps different stories apart', () => {
     expect(similarity(titleKey('Nvidia revenue jumps 60% on AI chip demand'), titleKey('Nvidia revenue jumps 60% as AI chip demand soars'))).toBeGreaterThanOrEqual(0.55);
   });
 });
+
+describe('fallback topics on real headlines (2026-09-25 snapshot)', () => {
+  const c = (title: string, excerpt: string, beat?: string): Candidate => ({ source: { ...src('x'), beat }, outlet: 'X', title, url: 'https://x/1', excerpt, article: null });
+  it('reads the headline first', () => {
+    expect(extractive(c('Dow, S&P 500 and Nasdaq notch weekly wins as market shrugs off bond sell-off',
+      'The Dow Jones Industrial Average rose 0.9% on Friday. Akamai Technologies rose 3% after announcing a multiyear deal with Anthropic.', 'Markets'))!.topic).toBe('Markets');
+    expect(extractive(c('Houthis say they launched missile and drone attacks on Riyadh and Aramco facilities',
+      "Yemen's Iran-aligned Houthis said they launched missile and drone attacks on a sensitive target in Riyadh, after Saudi Arabia intercepted six ballistic missiles.", 'World'))!.topic).toBe('World');
+    expect(extractive(c('Bitget hit by $350 million exploit, the largest crypto hack of 2026',
+      'Crypto exchange Bitget was hit by a $350 million exploit, the largest cryptocurrency hack of the year so far.'))!.topic).toBe('Cybersecurity');
+  });
+});
+
+describe('push channel', () => {
+  it('publishes pushed items and leaves other sources\' queued articles alone', async () => {
+    const { createApp } = await import('../server/app');
+    const { config } = await import('../server/config');
+    const request = (await import('supertest')).default;
+    config.adminToken = 'push-admin';
+    const db = openDb(':memory:');
+    // An RSS article is queued but not yet written up (its run was cut short).
+    db.prepare(`INSERT INTO ingest_items (url_hash, source_id, title_key, status, payload, published_at, seen_at) VALUES ('h1', 'bbc-world', 'k', 'pending', '{}', ?, ?)`)
+      .run(new Date().toISOString(), Date.now());
+    const app = createApp({ db, mail: async () => {} });
+    const item = { title: 'Ceasefire agreed in border conflict after UN talks', url: 'https://apnews.com/c', excerpt: 'Both governments agreed to a ceasefire on Wednesday after talks brokered by the United Nations ended a week of fighting along the border.', publishedAt: new Date(Date.now() - 3600_000).toISOString() };
+    await request(app).post('/api/admin/ingest/items').send({ source: { name: 'Agent Reach' }, items: [item] }).expect(401);
+    await request(app).post('/api/admin/ingest/items').set('Authorization', 'Bearer push-admin').send({ source: { name: 'Agent Reach' }, items: [{ ...item, url: 'javascript:x' }] }).expect(400);
+    const r = await request(app).post('/api/admin/ingest/items').set('Authorization', 'Bearer push-admin').send({ source: { name: 'Agent Reach', beat: 'World' }, items: [item] }).expect(200);
+    expect(r.body.published).toHaveLength(1);
+    expect(getStory(db, r.body.published[0])).toMatchObject({ topic: 'World', source: 'Agent Reach' });
+    expect(db.prepare("SELECT status FROM ingest_items WHERE url_hash = 'h1'").get()).toEqual({ status: 'pending' });
+  });
+});

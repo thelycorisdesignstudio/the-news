@@ -137,6 +137,8 @@ See `.env.example`. The ones that matter for production:
 - **Exa search** (agent-reach's search channel): eight standing news searches (AI, chips, AI policy, startups, world, markets, science, health) catch what no feed carries. It speaks MCP to Exa's free endpoint (`mcp.exa.ai`, the one agent-reach registers with mcporter), so no key is needed; with `EXA_API_KEY` it uses the Exa API instead.
 - **Jina Reader** (agent-reach's web channel): full article text when a feed only carries a teaser.
 
+- **Push** (any collector): `POST /api/admin/ingest/items` takes `{ source: { name, level?, country?, beat? }, items: [{ title, url, excerpt, publishedAt, outlet? }] }`. Pushed items go through the same dedupe, write-up and publishing as polled feeds. It's how an agent-reach agent with Twitter, Reddit or YouTube logins on another machine feeds the app. `node scripts/push-items.mjs <file>` pushes a JSON file; `scripts/snapshots/2026-09-25-web-search.json` holds 14 real headlines from 25 September 2026 (Yahoo Finance, TechCrunch, WHO, NASA, ScienceDaily and others), gathered by web search.
+
 `scripts/setup-agent-reach.sh` installs the agent-reach CLI itself. With `AGENT_REACH_BIN` set, its `doctor --json` report shows up in `/api/admin/sources`. Its Twitter, Reddit and YouTube channels need a logged-in session on the machine; they're not used automatically.
 
 - Each feed is polled on its own interval with conditional GET (`ETag`/`Last-Modified`). A failing feed backs off exponentially.
