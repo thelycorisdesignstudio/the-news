@@ -9,6 +9,8 @@ export class ApiError extends Error {
   get ref() { return this.body.ref as string | undefined; }
   /** True when the request never reached the server. */
   get offline() { return this.status === 0; }
+  /** True when something answered, but not our API (it isn't running, or a proxy/host is in the way). */
+  get unreachable() { return this.code === 'unreachable'; }
 }
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -25,7 +27,12 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   }
   const text = await res.text();
   let data: Record<string, unknown> = {};
-  try { data = text ? JSON.parse(text) : {}; } catch { /* non-JSON error page from a proxy */ }
+  let json = false;
+  try { data = text ? JSON.parse(text) : {}; json = true; } catch { /* not our API: a proxy or host error page */ }
+  // Our API always answers in JSON. Anything else means the request never got to it.
+  if (!json || (!res.ok && typeof data.status !== 'number')) {
+    throw new ApiError(res.status || 502, "we couldn't reach The News server. try again in a moment.", { code: 'unreachable' });
+  }
   if (!res.ok) throw new ApiError(res.status, (data.error as string) || 'something went wrong on our side.', data);
   return data as T;
 }

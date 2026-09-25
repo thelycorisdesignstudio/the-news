@@ -12,6 +12,8 @@ cp .env.example .env        # optional; sensible defaults work out of the box
 npm run dev                 # API on :8787, app on http://localhost:5173
 ```
 
+The app needs both halves. If log in says "we couldn't reach The News server", the API isn't running: start it with `npm run dev` (not `npm run dev:web` or `vite` alone) and check its output for errors. For a deployment, run `npm run build && npm start` on one Node host; a static host serving only `dist/` has no API behind it.
+
 Sign-up codes and password-reset links are printed in the API log until `SMTP_URL` is set.
 
 **Log in and sign up are dummies for now** (`DUMMY_AUTH`, on unless set to `0`): any email and password signs straight in. An unknown email gets an account on the spot, and there's no verification code and no lockout. Both screens say so in a small note.

@@ -147,7 +147,7 @@ export function SignUp() {
       nav('/verify', { state: { email: r.email, resendIn: r.resendIn, devCode: r.devCode } });
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fields).length) setServer(err.fields);
-      else setBanner(err instanceof ApiError ? err.message : 'something went wrong. try again.');
+      else setBanner(err instanceof ApiError ? err.message + (err.ref ? ` (ref ${err.ref})` : '') : 'something went wrong. try again.');
     } finally {
       setBusy(false);
     }
@@ -315,7 +315,7 @@ export function LogIn() {
       if (!(err instanceof ApiError)) { setBanner('something went wrong. try again.'); return; }
       if (err.code === 'needs_verification') return nav('/verify', { state: { email: err.body.email, resendIn: err.body.resendIn, devCode: err.body.devCode } });
       setLocked(err.code === 'locked');
-      setBanner(err.offline ? "you're offline. check your connection and try again." : err.message);
+      setBanner(err.offline ? "you're offline. check your connection and try again." : err.message + (err.ref ? ` (ref ${err.ref})` : ''));
       setFields(err.fields);
     } finally {
       setBusy(false);
