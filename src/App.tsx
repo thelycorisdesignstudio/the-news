@@ -32,10 +32,17 @@ function RequireOnboarded({ children }: { children: ReactNode }) {
 }
 
 /** E8 · Session expired. Content stays behind the dialog. */
+// Screens where you're already signing back in: the dialog would only be in the way there.
+const AUTH_ROUTES = ['/signup', '/login', '/forgot', '/verify', '/reset-password', '/auth/complete'];
+
 function SessionExpired() {
-  const { sessionExpired, dismissExpired } = useStore();
+  const { sessionExpired, dismissExpired, user } = useStore();
   const nav = useNavigate();
-  if (!sessionExpired) return null;
+  const { pathname } = useLocation();
+  // Never over the screens you'd use to sign back in, and never once you're signed in again.
+  const hidden = AUTH_ROUTES.includes(pathname) || !!user;
+  useEffect(() => { if (sessionExpired && hidden) dismissExpired(); }, [sessionExpired, hidden, dismissExpired]);
+  if (!sessionExpired || hidden) return null;
   return (
     <Dialog title="you've been signed out." body="for your security, log in again to keep syncing your topics and places." onClose={dismissExpired}>
       <Button onClick={() => { dismissExpired(); nav('/login'); }}>log in</Button>

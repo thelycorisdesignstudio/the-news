@@ -80,3 +80,41 @@ test('dummy log in: any email and password signs straight in', async ({ page }) 
   // A new account has no topics yet, so it lands in onboarding.
   await expect(page.getByRole('heading', { name: 'what do you follow?' })).toBeVisible({ timeout: 5000 });
 });
+
+test('a stale sign-in left on the device never blocks sign up', async ({ page, context }) => {
+  // An earlier visit left a signed-in user and a session cookie the server no longer knows.
+  await page.goto('/landing');
+  await page.evaluate(() => {
+    localStorage.setItem('tn:wasSignedIn', 'true');
+    localStorage.setItem('tn:user', JSON.stringify({ id: 'gone', name: 'Old', email: 'old@example.com', verified: true, createdAt: new Date().toISOString() }));
+  });
+  await context.addCookies([{ name: 'tn_session', value: 'stale-token-from-before', url: 'http://localhost:8788' }]);
+  await page.goto('/signup');
+  await page.waitForTimeout(1500);
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await page.getByLabel('Email').fill(`fresh${Date.now()}@example.com`);
+  await page.getByRole('button', { name: 'create account' }).click();
+  await expect(page.getByRole('heading', { name: 'what do you follow?' })).toBeVisible({ timeout: 5000 });
+  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+});
+
+test('a session that lapses while the app is open shows the signed-out pop-up', async ({ page, context }) => {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(`reader${Date.now()}@example.com`);
+  await page.getByLabel('Password', { exact: true }).fill('x');
+  await page.getByRole('button', { name: 'log in' }).click();
+  await expect(page.getByRole('heading', { name: 'what do you follow?' })).toBeVisible({ timeout: 5000 });
+  // The server forgets the session (expired, revoked) while the app stays open…
+  await context.clearCookies();
+  await context.addCookies([{ name: 'tn_session', value: 'revoked', url: 'http://localhost:8788' }]);
+  // …and the next synced change finds out.
+  for (const t of ['AI Models', 'AI Policy', 'Robotics']) await page.getByRole('button', { name: t, exact: true }).click();
+  await page.getByRole('button', { name: 'continue →' }).click();
+  const dialog = page.getByRole('alertdialog');
+  await expect(dialog).toBeVisible({ timeout: 5000 });
+  await expect(dialog.getByText("you've been signed out.")).toBeVisible();
+  // Onboarding needs an account, so it waits on the welcome screen; "log in" goes straight there.
+  await dialog.getByRole('button', { name: 'log in' }).click();
+  await expect(page.getByRole('heading', { name: 'welcome back.' })).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+});

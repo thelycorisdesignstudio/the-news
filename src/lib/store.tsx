@@ -59,6 +59,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<Store['toast']>(null);
   const userRef = useRef(user);
   userRef.current = user;
+  /**
+   * True once the server has confirmed a session during this run of the app. Only a session that lapses
+   * while you're using it earns the "signed out" dialog; a stale sign-in remembered on the device from
+   * an earlier visit is cleared quietly, so it can never block the sign-up or log-in screens.
+   */
+  const confirmed = useRef(false);
+  const lapsed = useCallback(() => {
+    setUser(null);
+    storage.set('wasSignedIn', false);
+    if (confirmed.current) setSessionExpired(true);
+    confirmed.current = false;
+  }, []);
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
   const toastTimer = useRef<number>(0);
@@ -77,13 +89,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return await p;
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
-        setUser(null);
-        setSessionExpired(true);
+        lapsed();
         return undefined;
       }
       throw e;
     }
-  }, []);
+  }, [lapsed]);
 
   useEffect(() => { storage.set('prefs', prefs); applyTheme(prefs.theme); }, [prefs]);
   useEffect(() => { storage.set('library', library); }, [library]);
@@ -106,7 +117,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (o.op === 'save' || o.op === 'unsave') await api.save(o.id, o.op === 'save');
         else await api.like(o.id, o.op === 'like');
       } catch (e) {
-        if (e instanceof ApiError && e.status === 401) { setUser(null); setSessionExpired(true); }
+        if (e instanceof ApiError && e.status === 401) lapsed();
         break;
       }
       ops.shift();
@@ -116,7 +127,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const ids = historyBuf.current.splice(0);
       await guard(api.history(ids)).catch(() => historyBuf.current.push(...ids));
     }
-  }, [guard]);
+  }, [guard, lapsed]);
 
   const queue = useCallback((op: Op) => {
     const ops = storage.get<Op[]>('ops', []).filter(o => o.id !== op.id || (o.op.includes('save') !== op.op.includes('save')));
@@ -148,6 +159,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /** Reconciles local state with the account after any sign-in. */
   const signedIn = useCallback(async (u: User) => {
+    confirmed.current = true;
     setUser(u);
     setSessionExpired(false);
     storage.set('wasSignedIn', true);
@@ -178,6 +190,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       const me = await api.me();
       if (me.user) {
+        confirmed.current = true;
         if (!userRef.current || userRef.current.id !== me.user.id) await signedIn(me.user);
         else {
           setUser(me.user);
@@ -202,14 +215,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
           void flushOps();
         }
-      } else {
-        setUser(null);
-        if (me.sessionExpired || storage.get('wasSignedIn', false)) setSessionExpired(!!userRef.current || storage.get('wasSignedIn', false));
+      } else if (userRef.current || storage.get('wasSignedIn', false)) {
+        lapsed();
       }
     } catch (e) {
       if (!(e instanceof ApiError && e.offline)) throw e;
     }
-  }, [signedIn, flushOps]);
+  }, [signedIn, flushOps, lapsed]);
 
   useEffect(() => {
     let alive = true;
@@ -233,6 +245,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await api.logout().catch(() => {});
+    confirmed.current = false;
     storage.set('wasSignedIn', false);
     storage.remove('ops');
     storage.remove('feed');
