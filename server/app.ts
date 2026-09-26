@@ -35,6 +35,8 @@ export function createApp({ db, mail, staticDir }: { db: DB; mail: Mailer; stati
   app.use(cookieParser());
 
   const api = express.Router();
+  // Pushed news batches (admin only) can be large; everything else stays small.
+  api.use('/admin/ingest', express.json({ limit: '2mb' }));
   api.use(express.json({ limit: '200kb' }));
   // JSON-only writes plus SameSite=Lax cookies keep cross-site form posts out.
   api.use((req, _res, next) => {

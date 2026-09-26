@@ -30,10 +30,11 @@
   --grad-blue: #BED6EC;
   --grad-blue-deep: #8FB6E0;
   /* Glass */
-  --glass-tint: rgba(255, 255, 255, .32);
-  --glass-rim-hi: rgba(255, 255, 255, .95);
-  --glass-rim-lo: rgba(255, 255, 255, .18);
-  --glass-shadow: 0 6px 18px rgba(10, 10, 10, .08), 0 1px 2px rgba(10, 10, 10, .06);
+  --glass-tint: rgba(255, 255, 255, .42);
+  --glass-rim-hi: rgba(255, 255, 255, .92);
+  --glass-rim-lo: rgba(255, 255, 255, .22);
+  --glass-shadow: 0 4px 16px rgba(10, 10, 10, .08), 0 1px 2px rgba(10, 10, 10, .05);
+  --glass-icon: #3A3A3C;
   --frost: rgba(255, 255, 255, .56);
   --frost-border: rgba(255, 255, 255, .72);
   --page-bg: #E9E9E6;
@@ -70,10 +71,11 @@
   --grad-peach: #5C3B29;
   --grad-blue: #243D55;
   --grad-blue-deep: #1F4470;
-  --glass-tint: rgba(40, 40, 40, .34);
-  --glass-rim-hi: rgba(255, 255, 255, .35);
-  --glass-rim-lo: rgba(255, 255, 255, .05);
-  --glass-shadow: 0 6px 18px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .3);
+  --glass-tint: rgba(36, 36, 38, .5);
+  --glass-rim-hi: rgba(255, 255, 255, .34);
+  --glass-rim-lo: rgba(255, 255, 255, .07);
+  --glass-shadow: 0 4px 16px rgba(0, 0, 0, .32), 0 1px 2px rgba(0, 0, 0, .25);
+  --glass-icon: #E5E5EA;
   --frost: rgba(30, 30, 30, .55);
   --frost-border: rgba(255, 255, 255, .08);
   --page-bg: #050505;
@@ -208,25 +210,31 @@ input { font-family: var(--font); }
 .lg:active:not(:disabled) { transform: scale(.94); }
 .lg__bg { position: absolute; inset: 0; z-index: -1; display: block; border-radius: inherit; overflow: hidden; pointer-events: none; }
 .lg__body, .lg__lens, .lg__tint, .lg__rim { position: absolute; inset: 0; display: block; border-radius: inherit; }
-.lg__body { -webkit-backdrop-filter: blur(7px) saturate(180%) brightness(1.05); backdrop-filter: blur(7px) saturate(180%) brightness(1.05); }
-/* The refracting edge: less blur, more light and colour, masked to a ring. */
+.lg__body { -webkit-backdrop-filter: blur(10px) saturate(135%) brightness(1.04); backdrop-filter: blur(10px) saturate(135%) brightness(1.04); }
+/*
+ * The refracting edge: a thin ring of sharper, slightly brighter backdrop. Saturation stays low, so the glass
+ * picks up the colour behind it without glowing (a strong boost turned peach into orange and blue into cyan).
+ */
 .lg__lens {
-  -webkit-backdrop-filter: blur(1.5px) saturate(240%) brightness(1.16) contrast(1.06); backdrop-filter: blur(1.5px) saturate(240%) brightness(1.16) contrast(1.06);
-  -webkit-mask: radial-gradient(closest-side, transparent 64%, rgba(0, 0, 0, .55) 84%, #000 100%);
-  mask: radial-gradient(closest-side, transparent 64%, rgba(0, 0, 0, .55) 84%, #000 100%);
+  -webkit-backdrop-filter: blur(2px) saturate(150%) brightness(1.1); backdrop-filter: blur(2px) saturate(150%) brightness(1.1);
+  -webkit-mask: radial-gradient(closest-side, transparent 74%, rgba(0, 0, 0, .45) 90%, #000 100%);
+  mask: radial-gradient(closest-side, transparent 74%, rgba(0, 0, 0, .45) 90%, #000 100%);
 }
 .lg__tint { background: var(--lg-tint, var(--glass-tint)); transition: background 180ms; }
+/* Light catching the edge: brightest along the top, a softer return along the bottom, faint at the sides. */
 .lg__rim {
   padding: 1px;
-  background: linear-gradient(135deg, var(--glass-rim-hi) 0%, var(--glass-rim-lo) 38%, var(--glass-rim-lo) 62%, var(--glass-rim-hi) 100%);
+  background: linear-gradient(180deg, var(--glass-rim-hi) 0%, var(--glass-rim-lo) 34%, var(--glass-rim-lo) 66%, color-mix(in srgb, var(--glass-rim-hi) 55%, transparent) 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
-/* Specular highlight plus a faint chromatic fringe: warm on the top-left, cool on the bottom-right. */
+/* Specular sheen: a soft highlight on the upper half, a whisper of shade at the foot. No coloured fringe. */
 .lg__bg::after {
   content: ''; position: absolute; inset: 0; border-radius: inherit;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .6), inset 1px 1px 1.5px rgba(255, 150, 120, .14), inset -1px -1px 1.5px rgba(110, 160, 255, .16), inset 0 -1px 2px rgba(10, 10, 10, .05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 48%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), inset 0 -1px 1px rgba(10, 10, 10, .04);
 }
+:root[data-theme="dark"] .lg__bg::after { background: linear-gradient(180deg, rgba(255, 255, 255, .08) 0%, rgba(255, 255, 255, 0) 48%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14); }
 .lg.is-like .lg__tint { background: color-mix(in srgb, var(--alert-tint) 82%, transparent); }
 .lg.is-save .lg__tint { background: color-mix(in srgb, var(--signal-tint) 82%, transparent); }
 @media (hover: hover) { .lg:hover:not(:disabled) .lg__tint { background: color-mix(in srgb, var(--lg-tint, var(--glass-tint)), rgba(255, 255, 255, .5) 18%); } }
@@ -240,9 +248,9 @@ input { font-family: var(--font); }
 .btn-primary.lg.is-loading { background: transparent; }
 .btn-secondary.lg { background: transparent; }
 .btn-dark.lg { --lg-tint: color-mix(in srgb, var(--ink) 88%, transparent); }
-.btn-light.lg { border-color: transparent; --lg-tint: color-mix(in srgb, var(--card) 80%, transparent); }
+.btn-light.lg { border-color: transparent; --lg-tint: color-mix(in srgb, var(--card) 86%, transparent); }
 /* Clear glass on a white button: keep the edge light, not colour, so the blue behind never turns it cyan. */
-.btn-light.lg .lg__lens, .btn-secondary.lg .lg__lens { opacity: .3; }
+.btn-light.lg .lg__lens, .btn-secondary.lg .lg__lens { opacity: .2; }
 .chip.lg, .chip-sm.lg { background: transparent; border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: var(--glass-shadow); }
 .chip.lg.is-on, .chip-sm.lg.is-on { --lg-tint: color-mix(in srgb, var(--signal-tint) 86%, transparent); border-color: var(--signal); box-shadow: 0 4px 14px color-mix(in srgb, var(--signal) 16%, transparent); }
 .chip.lg.is-off-disabled { --lg-tint: color-mix(in srgb, var(--rule) 80%, transparent); box-shadow: none; }
@@ -269,7 +277,11 @@ input { font-family: var(--font); }
 [role="dialog"] .lg .lg__body, [role="dialog"] .lg .lg__lens { display: none; }
 [role="dialog"] .lg { --glass-tint: color-mix(in srgb, var(--card) 88%, transparent); }
 /* Tinted glass is dense, so the refracting ring shows as light on the edge rather than colour through it. */
-.btn-primary.lg .lg__lens, .btn-dark.lg .lg__lens, .btn-danger.lg .lg__lens, .lg-signal .lg__lens, .lg-switch.is-on .lg__lens { opacity: .55; }
+.btn-primary.lg .lg__lens, .btn-dark.lg .lg__lens, .btn-danger.lg .lg__lens, .lg-signal .lg__lens, .lg-switch.is-on .lg__lens { opacity: .35; }
+/* On dense tinted glass the sheen is subtler and the rim a quiet highlight, so it reads as colour under glass, not an outline. */
+.btn-primary.lg .lg__bg::after, .btn-danger.lg .lg__bg::after, .lg-signal .lg__bg::after, .lg-switch.is-on .lg__bg::after { background: linear-gradient(180deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, 0) 50%); }
+.btn-dark.lg .lg__bg::after { background: linear-gradient(180deg, rgba(255, 255, 255, .1) 0%, rgba(255, 255, 255, 0) 50%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
+.btn-primary.lg .lg__rim, .btn-danger.lg .lg__rim, .lg-signal .lg__rim, .btn-dark.lg .lg__rim { opacity: .6; }
 
 /* Frosted glass: cards and chips. Same material without refraction, a little more tint for reading. */
 .frost { background: var(--frost) !important; border-color: var(--frost-border) !important; -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset, 0 4px 16px rgba(10, 10, 10, .04); }

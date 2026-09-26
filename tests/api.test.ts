@@ -268,3 +268,33 @@ describe('profile and feedback', () => {
     await request(app).post('/api/feedback').send({ rating: 3 }).expect(429);
   });
 });
+
+describe('limits', () => {
+  it('caps live-update streams per address and frees slots when they close', async () => {
+    const server = app.listen(0);
+    const port = (server.address() as { port: number }).port;
+    const ctrls: AbortController[] = [];
+    const open = async () => {
+      const c = new AbortController(); ctrls.push(c);
+      const r = await fetch(`http://127.0.0.1:${port}/api/stream`, { signal: c.signal });
+      return r.status;
+    };
+    try {
+      for (let i = 0; i < 6; i++) expect(await open()).toBe(200);
+      expect(await open()).toBe(429);
+      ctrls[0].abort();
+      await new Promise(r => setTimeout(r, 100));
+      expect(await open()).toBe(200);
+    } finally {
+      ctrls.forEach(c => c.abort());
+      server.close();
+    }
+  });
+
+  it('accepts a full 200-item push batch (larger than the default body limit)', async () => {
+    config.adminToken = 'lim-admin';
+    const items = Array.from({ length: 200 }, (_, i) => ({ title: `Story ${i} about markets`, url: `https://x.test/${i}`, excerpt: 'word '.repeat(700), publishedAt: null }));
+    const r = await request(app).post('/api/admin/ingest/items').set('Authorization', 'Bearer lim-admin').send({ source: { name: 'Bulk' }, items });
+    expect(r.status).toBe(200);
+  });
+});

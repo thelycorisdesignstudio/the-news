@@ -71,6 +71,9 @@ function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [],
   return out;
 }
 
+const MAX_STREAMS_PER_IP = 6;
+const streams = new Map<string, number>();
+
 export function dataRoutes(db: DB) {
   const r = Router();
 
@@ -87,13 +90,23 @@ export function dataRoutes(db: DB) {
 
   // Live updates: a server-sent event whenever new stories land, so open feeds can pull them in.
   r.get('/stream', (req, res) => {
+    // A handful of open tabs per address is normal; more is a leak or abuse.
+    const ip = req.ip ?? 'unknown';
+    const open = streams.get(ip) ?? 0;
+    if (open >= MAX_STREAMS_PER_IP) throw new HttpError(429, 'too many open connections.');
+    streams.set(ip, open + 1);
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.flushHeaders();
     res.write('retry: 15000\n\n');
     const send = (e: { added: number; ids: string[]; at: string }) => { res.write(`event: stories\ndata: ${JSON.stringify(e)}\n\n`); };
     newsEvents.on('stories', send);
     const beat = setInterval(() => res.write(': ping\n\n'), 25_000);
-    req.on('close', () => { clearInterval(beat); newsEvents.off('stories', send); });
+    req.on('close', () => {
+      clearInterval(beat);
+      newsEvents.off('stories', send);
+      const n = (streams.get(ip) ?? 1) - 1;
+      if (n > 0) streams.set(ip, n); else streams.delete(ip);
+    });
   });
 
   // ---- feedback (signed in or not; a few a day per device is plenty) ----

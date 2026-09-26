@@ -31,13 +31,13 @@ export function FeedNav({ onProfile, onFilter, onView, filtersActive, view = 'sw
   const round = { width: 28, height: 28, padding: 0, border: 0, borderRadius: '50%', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' } as const;
   return (
     <div style={{ position: 'absolute', top: T(top), left: 20, right: 20, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
-      <button aria-label="profile" className="lg" onClick={onProfile} style={round}><GlassBg /><Icon name="user" size={16} color="var(--gray)" /></button>
+      <button aria-label="profile" className="lg" onClick={onProfile} style={round}><GlassBg /><Icon name="user" size={16} color="var(--glass-icon)" /></button>
       <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}><Wordmark size="xs" /></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {showFilter && (
           <button aria-label="filters" className="lg" onClick={onFilter} style={{ ...round, position: 'relative' }}>
             <GlassBg />
-            <Icon name="filter" size={15} color="var(--ink)" />
+            <Icon name="filter" size={15} color="var(--glass-icon)" />
             {filtersActive && <span style={{ position: 'absolute', top: 1, right: 1, width: 7, height: 7, borderRadius: '50%', background: 'var(--signal)', border: '1.5px solid var(--rule)' }} />}
           </button>
         )}
@@ -110,7 +110,7 @@ export function FeedCard(p: FeedCardProps) {
       <div style={{ position: 'absolute', right: 14, bottom: B(124), display: 'flex', flexDirection: 'column', gap: 16, zIndex: 4 }}>
         <button aria-label={p.liked ? 'unlike' : 'like'} aria-pressed={!!p.liked} onClick={p.onLike} className={`lg${p.liked ? ' is-like' : ''}`} style={actionBtn}>
           <GlassBg />
-          <Icon key={p.liked ? 'on' : 'off'} name="favourite" size={24} color={p.liked ? 'var(--alert)' : 'var(--gray-2)'} style={p.liked ? { animation: 'tnHeart 300ms ease-out' } : undefined} />
+          <Icon key={p.liked ? 'on' : 'off'} name="favourite" size={24} color={p.liked ? 'var(--alert)' : 'var(--glass-icon)'} style={p.liked ? { animation: 'tnHeart 300ms ease-out' } : undefined} />
           {p.liked && p.burst && p.burst !== 'none' && (
             <div style={{ position: 'absolute', inset: 6, pointerEvents: 'none' }}>
               {DOTS.map(([x, y], i) => (
@@ -121,14 +121,14 @@ export function FeedCard(p: FeedCardProps) {
         </button>
         <button aria-label="share" onClick={p.onShare} className="lg" style={actionBtn}>
           <GlassBg />
-          <Icon name="share" size={24} color="var(--gray-2)" />
+          <Icon name="share" size={22} color="var(--glass-icon)" />
           {p.shareTip && <span role="status" className="toast" style={{ position: 'absolute', right: 42, top: 9, padding: '6px 10px' }}>copied.</span>}
         </button>
         <button aria-label={p.saved ? 'remove bookmark' : 'bookmark'} aria-pressed={!!p.saved} onClick={p.onSave} className={`lg${p.saved ? ' is-save' : ''}`} style={actionBtn}>
           <GlassBg />
           {p.saved
             ? <Icon key="on" name="bookmark-check" size={24} color="var(--signal)" style={{ animation: 'tnHeart 300ms ease-out' }} />
-            : <Icon key="off" name="bookmark" size={24} color="var(--gray-2)" />}
+            : <Icon key="off" name="bookmark" size={24} color="var(--glass-icon)" />}
         </button>
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, bottom: B(58), display: 'flex', justifyContent: 'center' }}>
