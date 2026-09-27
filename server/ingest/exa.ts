@@ -41,13 +41,38 @@ interface ExaResult { title?: string; url?: string; publishedDate?: string; text
 /** "Headline | Outlet" or "Headline - Outlet" from search results: the card shows the outlet separately. */
 const stripSiteSuffix = (t: string) => t.replace(/\s+[|–—-]\s+[^|–—-]{2,40}$/, '').trim();
 
+/**
+ * Search returns section fronts and home pages too ("CBS News | Breaking news, top stories", "US Markets,
+ * Company Earnings, Stock Market Trends .."). Articles have an article-shaped address: a dated path or a
+ * long hyphenated slug, and a headline that isn't a site's tagline.
+ */
+export function looksLikeArticle(url: string, title: string): boolean {
+  let path: string;
+  try { path = new URL(url).pathname.replace(/\/+$/, ''); } catch { return false; }
+  const last = path.split('/').pop() ?? '';
+  const dated = /\/(19|20)\d{2}\/\d{1,2}(\/|-)|\/(19|20)\d{2}-\d{2}-\d{2}|\d{6,}/.test(path);
+  const slug = (last.match(/-/g) ?? []).length >= 3;
+  if (!dated && !slug) return false;
+  if (/(breaking news|top stories|latest news|live updates|today'?s news|home ?page)\b/i.test(title)) return false;
+  if (/\.\.\.?$|…$/.test(title.trim())) return false;
+  return true;
+}
+
+/** Search snippets arrive as highlights: "..." joins, markdown headings, stray separators. */
+export const cleanSnippet = (t: string) => t
+  .replace(/#{1,6}\s*/g, '')
+  .replace(/\s*(\.\.\.|…)\s*/g, ' ')
+  .replace(/\s*\|\s*/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
 const toItems = (results: ExaResult[], sinceIso: string): FeedItem[] => results
   // Undated results are section fronts and landing pages ("Artificial Intelligence - AI News"), not stories.
-  .filter(r => r.title && r.url && /^https?:\/\//.test(r.url) && r.publishedDate)
+  .filter(r => r.title && r.url && /^https?:\/\//.test(r.url) && r.publishedDate && looksLikeArticle(r.url, r.title))
   .map(r => ({
     title: stripSiteSuffix(r.title!.trim()),
     url: r.url!,
-    excerpt: (r.summary || r.text || '').replace(/\s+/g, ' ').trim().slice(0, 2000),
+    excerpt: cleanSnippet(r.summary || r.text || '').slice(0, 2000),
     publishedAt: r.publishedDate && Number.isFinite(Date.parse(r.publishedDate)) ? new Date(r.publishedDate).toISOString() : null,
     outlet: outletFor(r.url!),
   }))

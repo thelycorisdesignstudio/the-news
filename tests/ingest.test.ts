@@ -222,13 +222,13 @@ describe('world coverage and agent-reach Exa channel', () => {
       if (body.method === 'initialize') return new Response('event: message\ndata: {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26"}}\n\n', { headers: { 'mcp-session-id': 'sess-1' } });
       if (body.method === 'notifications/initialized') return new Response(null, { status: 202 });
       expect(body.params.name).toBe('web_search_exa');
-      const text = 'Title: Ceasefire agreed\nURL: https://apnews.com/c\nPublished Date: 2026-09-24T09:00:00Z\nText: Both sides agreed to a ceasefire.';
+      const text = 'Title: Ceasefire agreed\nURL: https://apnews.com/article/ceasefire-agreed-border-talks-2026\nPublished Date: 2026-09-24T09:00:00Z\nText: Both sides agreed to a ceasefire.';
       return new Response(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ type: 'text', text }] } }));
     }) as unknown as typeof fetch;
     const items = await exaSearch('top world news today', '2026-09-23T00:00:00Z', fake);
     expect(calls.map(c => c.method)).toEqual(['initialize', 'notifications/initialized', 'tools/call']);
     expect(calls[2].session).toBe('sess-1');
-    expect(items).toEqual([{ title: 'Ceasefire agreed', url: 'https://apnews.com/c', excerpt: 'Both sides agreed to a ceasefire.', publishedAt: '2026-09-24T09:00:00.000Z', outlet: 'Associated Press' }]);
+    expect(items).toEqual([{ title: 'Ceasefire agreed', url: 'https://apnews.com/article/ceasefire-agreed-border-talks-2026', excerpt: 'Both sides agreed to a ceasefire.', publishedAt: '2026-09-24T09:00:00.000Z', outlet: 'Associated Press' }]);
   });
 
   it('feeds Exa results into the cycle like any other source', async () => {
@@ -386,5 +386,17 @@ describe('real headlines with outlet labels', () => {
   it('keeps "Headline | Outlet" stories', async () => {
     const { looksLikeStory } = await import('../server/ingest/pipeline');
     expect(looksLikeStory('Cyera raises $400 million from Goldman in extension round | Bloomberg')).toBe(true);
+  });
+});
+
+describe('Exa results must be articles', () => {
+  it('keeps article addresses and drops section fronts and home pages', async () => {
+    const { looksLikeArticle, cleanSnippet } = await import('../server/ingest/exa');
+    expect(looksLikeArticle('https://www.cbsnews.com/', 'CBS News | Breaking news, top stories')).toBe(false);
+    expect(looksLikeArticle('https://www.morningstar.com/markets', 'US Markets, Company Earnings, Stock Market Trends ..')).toBe(false);
+    expect(looksLikeArticle('https://www.bloomberg.com/news/articles/2026-09-26/cyera-raises-400-million', 'Cyera raises $400 million')).toBe(true);
+    expect(looksLikeArticle('https://www.koreaherald.com/article/10584211', 'Why SK hynix is weighing US memory production')).toBe(true);
+    expect(looksLikeArticle('https://techcrunch.com/2026/09/25/tesla-finally-moves-to-electrify-trucking/', 'Tesla starts Semi deliveries')).toBe(true);
+    expect(cleanSnippet('### The Labor Market ... Is Weaker | Than the Bond Market Thinks ...')).toBe('The Labor Market Is Weaker Than the Bond Market Thinks');
   });
 });
