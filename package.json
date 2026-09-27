@@ -2,7 +2,7 @@
   "name": "the-news",
   "private": true,
   "version": "1.0.0",
-  "description": "The News — the day's most important stories, nine seconds at a time.",
+  "description": "The News \u2014 the day's most important stories, nine seconds at a time.",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -16,7 +16,8 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "seed": "tsx server/seed.ts"
+    "seed": "tsx server/seed.ts",
+    "news:live": "git fetch -q origin live-news && git show origin/live-news:live/latest.json > data/live-latest.json && node scripts/push-items.mjs data/live-latest.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

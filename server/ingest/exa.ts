@@ -8,15 +8,44 @@ import type { FeedItem } from './rss';
  * API is used instead (news category, date-filtered, higher limits).
  */
 export async function exaSearch(query: string, sinceIso: string, fetchImpl: typeof fetch = fetch): Promise<FeedItem[]> {
-  return config.news.exaKey ? viaApi(query, sinceIso, fetchImpl) : viaMcp(query, sinceIso, fetchImpl);
+  // The free endpoint rate-limits bursts (eight searches at once came back 429): one search at a time,
+  // spaced out, with one patient retry.
+  return queued(async () => {
+    const run = () => (config.news.exaKey ? viaApi(query, sinceIso, fetchImpl) : viaMcp(query, sinceIso, fetchImpl));
+    try {
+      return await run();
+    } catch (e) {
+      if (!/429/.test(String(e))) throw e;
+      await new Promise(r => setTimeout(r, EXA_RETRY_MS));
+      return run();
+    }
+  });
+}
+
+const EXA_SPACING_MS = Number(process.env.EXA_SPACING_MS ?? 2500);
+const EXA_RETRY_MS = Number(process.env.EXA_RETRY_MS ?? 8000);
+let tail: Promise<unknown> = Promise.resolve();
+let last = 0;
+function queued<T>(fn: () => Promise<T>): Promise<T> {
+  const next = tail.then(async () => {
+    const wait = last + EXA_SPACING_MS - Date.now();
+    if (wait > 0) await new Promise(r => setTimeout(r, wait));
+    try { return await fn(); } finally { last = Date.now(); }
+  });
+  tail = next.catch(() => {});
+  return next;
 }
 
 interface ExaResult { title?: string; url?: string; publishedDate?: string; text?: string; summary?: string; author?: string }
 
+/** "Headline | Outlet" or "Headline - Outlet" from search results: the card shows the outlet separately. */
+const stripSiteSuffix = (t: string) => t.replace(/\s+[|–—-]\s+[^|–—-]{2,40}$/, '').trim();
+
 const toItems = (results: ExaResult[], sinceIso: string): FeedItem[] => results
-  .filter(r => r.title && r.url && /^https?:\/\//.test(r.url))
+  // Undated results are section fronts and landing pages ("Artificial Intelligence - AI News"), not stories.
+  .filter(r => r.title && r.url && /^https?:\/\//.test(r.url) && r.publishedDate)
   .map(r => ({
-    title: r.title!.trim(),
+    title: stripSiteSuffix(r.title!.trim()),
     url: r.url!,
     excerpt: (r.summary || r.text || '').replace(/\s+/g, ' ').trim().slice(0, 2000),
     publishedAt: r.publishedDate && Number.isFinite(Date.parse(r.publishedDate)) ? new Date(r.publishedDate).toISOString() : null,

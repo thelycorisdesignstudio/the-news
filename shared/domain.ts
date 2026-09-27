@@ -223,13 +223,15 @@ export function matchesFilters(s: Story, f: Filters, places: Place[]): boolean {
   if (s.level !== 'global' && f.cty.length && s.country) {
     if (!f.cty.some(n => countryCode(n) === s.country)) return false;
   }
-  if (s.level === 'state' && places.length) {
+  // Local stories only reach readers who live there: a state story needs a saved place in that region,
+  // a city story a place in that city (or that city picked in the filter). No places, no local news.
+  if (s.level === 'state') {
     if (!places.some(p => p.region === s.region)) return false;
   }
   if (s.level === 'city') {
     if (f.plc.length) {
       if (!f.plc.includes(s.city ?? '')) return false;
-    } else if (places.length && !places.some(p => p.city === s.city)) {
+    } else if (!places.some(p => p.city === s.city)) {
       return false;
     }
   }

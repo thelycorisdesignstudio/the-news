@@ -63,3 +63,17 @@ describe('theme', () => {
     expect(defaultPrefs().theme).toBe('light');
   });
 });
+
+describe('local stories need a matching place', async () => {
+  const { matchesFilters, EMPTY_FILTERS } = await import('../shared/domain');
+  const city = { id: 'c', cat: 'Civic', topic: 'Civic', title: 't', summary: 's', source: 'x', url: 'https://x', publishedAt: new Date().toISOString(), level: 'city' as const, type: 'news' as const, country: 'IN', city: 'Mumbai', region: 'Maharashtra' };
+  const bengaluru = { id: 'h', kind: 'home' as const, label: 'Home', area: 'Indiranagar', city: 'Bengaluru', region: 'Karnataka', country: 'IN', lat: 12.97, lon: 77.64, radiusKm: 3 };
+  it('hides city and state news from readers with no places, or places elsewhere', () => {
+    expect(matchesFilters(city, EMPTY_FILTERS, [])).toBe(false);
+    expect(matchesFilters(city, EMPTY_FILTERS, [bengaluru])).toBe(false);
+    expect(matchesFilters({ ...city, level: 'state' }, EMPTY_FILTERS, [])).toBe(false);
+  });
+  it('shows them to readers who live there', () => {
+    expect(matchesFilters(city, EMPTY_FILTERS, [{ ...bengaluru, city: 'Mumbai', region: 'Maharashtra' }])).toBe(true);
+  });
+});

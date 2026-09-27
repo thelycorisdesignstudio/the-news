@@ -337,9 +337,54 @@ describe('push channel', () => {
     const item = { title: 'Ceasefire agreed in border conflict after UN talks', url: 'https://apnews.com/c', excerpt: 'Both governments agreed to a ceasefire on Wednesday after talks brokered by the United Nations ended a week of fighting along the border.', publishedAt: new Date(Date.now() - 3600_000).toISOString() };
     await request(app).post('/api/admin/ingest/items').send({ source: { name: 'Agent Reach' }, items: [item] }).expect(401);
     await request(app).post('/api/admin/ingest/items').set('Authorization', 'Bearer push-admin').send({ source: { name: 'Agent Reach' }, items: [{ ...item, url: 'javascript:x' }] }).expect(400);
-    const r = await request(app).post('/api/admin/ingest/items').set('Authorization', 'Bearer push-admin').send({ source: { name: 'Agent Reach', beat: 'World' }, items: [item] }).expect(200);
+    const r = await request(app).post('/api/admin/ingest/items?wait=1').set('Authorization', 'Bearer push-admin').send({ source: { name: 'Agent Reach', beat: 'World' }, items: [item] }).expect(200);
     expect(r.body.published).toHaveLength(1);
     expect(getStory(db, r.body.published[0])).toMatchObject({ topic: 'World', source: 'Agent Reach' });
     expect(db.prepare("SELECT status FROM ingest_items WHERE url_hash = 'h1'").get()).toEqual({ status: 'pending' });
+  });
+});
+
+describe('teasers that only repeat the headline', () => {
+  it('drops Google News style descriptions and keeps real ones', async () => {
+    const { cleanExcerpt } = await import('../server/ingest/rss');
+    expect(cleanExcerpt('Fed holds rates steady as inflation cools', 'Fed holds rates steady as inflation cools&nbsp;&nbsp;Reuters'.replace('&nbsp;&nbsp;', '  '), 'Reuters')).toBe('');
+    expect(cleanExcerpt('Fed holds rates steady', 'The Federal Reserve kept its benchmark rate unchanged on Wednesday, citing slowing price growth and a cooling labour market.')).not.toBe('');
+    const [item] = parseFeed(RSS([{ t: 'Fed holds rates steady - Reuters', l: 'https://news.google.com/rss/articles/x', d: '<a href="https://news.google.com/rss/articles/x">Fed holds rates steady</a>&nbsp;&nbsp;<font color="#6f6f6f">Reuters</font>', m: 5, src: 'Reuters' }]));
+    expect(item.excerpt).toBe('');
+  });
+});
+
+describe('section pages are not stories', () => {
+  it('keeps headlines and drops tag pages and listings', async () => {
+    const { looksLikeStory } = await import('../server/ingest/pipeline');
+    expect(looksLikeStory('AI (artificial intelligence)')).toBe(false);
+    expect(looksLikeStory('AI News: Artificial Intelligence Stories, Ranked | AI Weekly')).toBe(false);
+    expect(looksLikeStory('Latest news and headlines')).toBe(false);
+    expect(looksLikeStory('Australia summons OpenAI and Anthropic CEOs to appear at AI inquiry')).toBe(true);
+    expect(looksLikeStory('Apple hit with $5.7 billion in damages over haptic patents')).toBe(true);
+  });
+});
+
+describe('opinion detection without Claude', () => {
+  it('marks columns by URL section and headline prefix', () => {
+    const c = (title: string, url: string): Candidate => ({ source: src('x'), outlet: 'X', title, url, excerpt: LONG, article: null });
+    expect(extractive(c('Nvidia and the limits of the AI chip boom', 'https://www.theguardian.com/commentisfree/2026/sep/27/nvidia'))!.type).toBe('opinion');
+    expect(extractive(c('Opinion: Nvidia revenue jumps and what it means', 'https://x.test/a'))!.type).toBe('opinion');
+    expect(extractive(c('Nvidia revenue jumps 60% on AI chip demand', 'https://x.test/b'))!.type).toBe('news');
+  });
+});
+
+describe('site-labelled section titles', () => {
+  it('judges the headline without its " - Site" label', async () => {
+    const { looksLikeStory } = await import('../server/ingest/pipeline');
+    expect(looksLikeStory('Artificial Intelligence - AI News')).toBe(false);
+    expect(looksLikeStory('Investors nervous about AI spending slowdown - Reuters')).toBe(true);
+  });
+});
+
+describe('real headlines with outlet labels', () => {
+  it('keeps "Headline | Outlet" stories', async () => {
+    const { looksLikeStory } = await import('../server/ingest/pipeline');
+    expect(looksLikeStory('Cyera raises $400 million from Goldman in extension round | Bloomberg')).toBe(true);
   });
 });

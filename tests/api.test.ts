@@ -294,7 +294,7 @@ describe('limits', () => {
   it('accepts a full 200-item push batch (larger than the default body limit)', async () => {
     config.adminToken = 'lim-admin';
     const items = Array.from({ length: 200 }, (_, i) => ({ title: `Story ${i} about markets`, url: `https://x.test/${i}`, excerpt: 'word '.repeat(700), publishedAt: null }));
-    const r = await request(app).post('/api/admin/ingest/items').set('Authorization', 'Bearer lim-admin').send({ source: { name: 'Bulk' }, items });
+    const r = await request(app).post('/api/admin/ingest/items?wait=1').set('Authorization', 'Bearer lim-admin').send({ source: { name: 'Bulk' }, items });
     expect(r.status).toBe(200);
   });
 });

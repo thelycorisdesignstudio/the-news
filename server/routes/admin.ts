@@ -58,7 +58,12 @@ export function adminRoutes(db: DB) {
   r.post('/ingest/items', async (req, res) => {
     const body = pushed.safeParse(req.body);
     if (!body.success) throw new HttpError(400, 'invalid items.', { issues: body.error.issues.slice(0, 10).map(i => `${i.path.join('.')}: ${i.message}`) });
-    res.json(await ingestPushed(db, body.data.source, body.data.items));
+    // Write-ups can take minutes with Claude, so by default the batch is accepted and processed in the
+    // background; ?wait=1 holds the request and returns the full report.
+    const run = ingestPushed(db, body.data.source, body.data.items);
+    if (req.query.wait === '1') return res.json(await run);
+    run.catch(e => console.error('[push] ingest failed', e));
+    res.status(202).json({ accepted: body.data.items.length });
   });
   r.get('/feedback', (_req, res) => {
     res.json({ feedback: db.prepare(`SELECT f.id, f.rating, f.message, f.context, f.created_at AS createdAt, u.email

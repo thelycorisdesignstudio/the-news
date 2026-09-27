@@ -33,6 +33,23 @@ export function decodeEntities(s: string) {
   });
 }
 
+const words = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
+
+/**
+ * A teaser that only repeats the headline (Google News puts "Headline  Outlet" in the description) says
+ * nothing new; returning '' lets the pipeline fetch the article or skip it instead of echoing the title.
+ */
+export function cleanExcerpt(title: string, excerpt: string, outlet?: string): string {
+  const e = excerpt.trim();
+  if (!e) return '';
+  const t = new Set(words(title));
+  if (outlet) for (const w of words(outlet)) t.add(w);
+  const ew = words(e);
+  if (!ew.length) return '';
+  const repeated = ew.filter(w => t.has(w)).length / ew.length;
+  return repeated >= 0.7 ? '' : e;
+}
+
 /** HTML to readable text: drops tags, scripts and "The post … appeared first on …" trailers. */
 export function toText(html: string) {
   return decodeEntities(
@@ -83,9 +100,9 @@ export function parseFeed(xml: string): FeedItem[] {
     const title = toText(text(it.title));
     const link = (atom ? atomLink(it.link) : text(it.link) || (typeof it.guid === 'string' && /^https?:/.test(it.guid) ? it.guid : '')).trim();
     if (!title || !/^https?:\/\//i.test(link)) continue;
-    const excerpt = toText(text(it.description) || text(it.summary) || text(it['content:encoded']) || text(it.content)).slice(0, 2000);
-    const published = isoDate(text(it.pubDate) || text(it.published) || text(it.updated) || text(it['dc:date']));
     const outlet = toText(text(it.source)) || undefined;
+    const excerpt = cleanExcerpt(title, toText(text(it.description) || text(it.summary) || text(it['content:encoded']) || text(it.content)), outlet).slice(0, 2000);
+    const published = isoDate(text(it.pubDate) || text(it.published) || text(it.updated) || text(it['dc:date']));
     out.push({ title, url: link, excerpt, publishedAt: published, outlet });
   }
   return out;

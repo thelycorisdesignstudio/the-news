@@ -25,6 +25,8 @@ export interface IngestDeps {
   now?: () => number;
   /** Poll every feed now, ignoring intervals and backoff (the admin "ingest now" button). */
   force?: boolean;
+  /** Most articles written up in this run (default INGEST_MAX_PER_CYCLE). */
+  limit?: number;
 }
 
 export interface CycleReport {
@@ -66,7 +68,22 @@ interface PendingRow { url_hash: string; source_id: string; title_key: string; a
 export async function ingestPushed(db: DB, src: { name: string; level?: Source['level']; country?: string; city?: string; region?: string; beat?: string }, items: FeedItem[], deps: IngestDeps = {}) {
   const id = `push-${src.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'source'}`;
   const source: Source = { id, name: src.name, url: `push:${id}`, kind: 'exa', level: src.level ?? 'global', country: src.country, city: src.city, region: src.region, beat: src.beat, everyMin: 0 };
-  return runCycle(db, { ...deps, sources: [source], search: async () => items, force: true });
+  // A pushed batch is written up whole (it's at most 200 items), not a cycle's worth at a time.
+  return runCycle(db, { limit: items.length, ...deps, sources: [source], search: async () => items, force: true });
+}
+
+/**
+ * Section fronts and tag pages sometimes arrive as items ("AI (artificial intelligence)", "Latest news",
+ * "Stories, ranked | Site"). A story headline says something happened: at least four words, no listing.
+ */
+export function looksLikeStory(title: string): boolean {
+  // Judge the headline without a trailing " - Site" / " | Site" label.
+  const core = title.replace(/\s+[|–—-]\s+[^|–—-]{2,40}$/, '').trim();
+  const words = core.split(/\s+/).filter(Boolean);
+  if (words.length < 4) return false;
+  if (/^(latest|top|breaking)?\s*(news|headlines|stories)\b/i.test(title)) return false;
+  if (/\b(stories|news),? ranked\b/i.test(title)) return false;
+  return true;
 }
 
 /** A feed is due after its interval, backing off exponentially (up to 32×) while it keeps failing. */
@@ -90,6 +107,7 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
   const byId = new Map(sources.map(s => [s.id, s]));
   const report: CycleReport = { fetched: 0, notModified: 0, failed: [], discovered: 0, published: [], merged: 0, skipped: 0 };
   const windowStart = now() - config.feedWindowHours * 3600_000;
+  const limit = deps.limit ?? config.news.maxPerCycle;
 
   // 1. Poll due feeds.
   const states = new Map((db.prepare('SELECT * FROM feed_state').all() as FeedStateRow[]).map(r => [r.source_id, r]));
@@ -116,6 +134,7 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
       let fresh = 0;
       db.transaction(() => {
         for (const it of items) {
+          if (!looksLikeStory(it.title)) continue;
           const at = it.publishedAt ? Date.parse(it.publishedAt) : now();
           if (at < windowStart || at > now() + 3600_000) continue;
           const payload: FeedItem = { ...it, title: stripOutletSuffix(it.title, it.outlet) };
@@ -135,7 +154,7 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
   // 2. Take the newest pending articles, oldest attempts first.
   const pending = db.prepare(`SELECT url_hash, source_id, title_key, attempts, payload, published_at FROM ingest_items
     WHERE status = 'pending' AND published_at >= ? ORDER BY published_at DESC LIMIT ?`)
-    .all(new Date(windowStart).toISOString(), config.news.maxPerCycle * 3) as PendingRow[];
+    .all(new Date(windowStart).toISOString(), limit * 3) as PendingRow[];
   // Everything that slid out of the window without being written up is dropped.
   db.prepare(`UPDATE ingest_items SET status = 'expired', payload = NULL WHERE status = 'pending' AND published_at < ?`).run(new Date(windowStart).toISOString());
 
@@ -162,7 +181,7 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
       followers.set(lead.url_hash, [...(followers.get(lead.url_hash) ?? []), row]);
       continue;
     }
-    if (toWrite.length < config.news.maxPerCycle) toWrite.push(row);
+    if (toWrite.length < limit) toWrite.push(row);
   }
 
   // 3. Read and write up.

@@ -205,6 +205,13 @@ export function classify(text: string, opts: { local?: boolean; beat?: string } 
     ?? null;
 }
 
+/** Columns and analysis are marked as opinion (by URL section or headline prefix); city disruptions as alerts. */
+function typeFor(c: Candidate, blob: string): StoryType {
+  if (/\/(opinion|opinions|commentisfree|comment|columns?|analysis|editorials?)\//i.test(c.url) || /^(opinion|analysis|comment|column|view|editorial)\s*[:|–—-]/i.test(c.title)) return 'opinion';
+  if (c.source.level === 'city' && /\b(closed|closures?|delay\w*|warning|alert|disrupt\w*|suspended|diverted)\b/i.test(blob)) return 'local-alert';
+  return 'news';
+}
+
 export function extractive(c: Candidate): Draft | null {
   const blob = `${c.title}. ${c.excerpt}`;
   const local = c.source.level === 'city';
@@ -220,7 +227,7 @@ export function extractive(c: Candidate): Draft | null {
     ? [{ h: 'What happened', p: fitWords(paras[0], 60) }, { h: 'The detail', p: fitWords(paras[1], 60) }]
     : [];
   return finalise({
-    title: c.title, summary, topic, type: c.source.level === 'city' && /\b(closed|closures?|delay\w*|warning|alert|disrupt\w*|suspended|diverted)\b/i.test(blob) ? 'local-alert' : 'news',
+    title: c.title, summary, topic, type: typeFor(c, blob),
     level: c.source.level, country: c.source.country ?? null, region: c.source.region ?? null, city: c.source.city ?? null, more, importance: 5,
   }, c);
 }

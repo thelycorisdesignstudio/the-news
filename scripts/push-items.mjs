@@ -13,7 +13,7 @@ if (!token) { console.error('set ADMIN_TOKEN'); process.exit(1); }
 const { batches } = JSON.parse(readFileSync(file, 'utf8'));
 let published = 0, merged = 0, skipped = 0;
 for (const b of batches) {
-  const res = await fetch(`${origin}/api/admin/ingest/items`, {
+  const res = await fetch(`${origin}/api/admin/ingest/items?wait=1`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify(b),

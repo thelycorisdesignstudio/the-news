@@ -14,15 +14,28 @@ export interface NavHandlers {
   filtersActive?: boolean;
 }
 
-/** The nine-second segments across the top of the feed. `track` holds each segment's fill, 0–100. */
+/** Segments shown at once. A day of 60 stories would otherwise shrink the segments to dots. */
+const TRACK_WINDOW = 16;
+
+/**
+ * The nine-second segments across the top of the feed. `track` holds each segment's fill, 0–100. Long
+ * queues show a window around the current story; the end segments fade to say there's more either way.
+ */
 export function ProgressTrack({ track }: { track: number[] }) {
+  const n = track.length;
+  const current = Math.max(0, track.findIndex(w => w < 100) === -1 ? n - 1 : track.findIndex(w => w < 100));
+  const start = n <= TRACK_WINDOW ? 0 : Math.min(Math.max(0, current - 5), n - TRACK_WINDOW);
+  const shown = track.slice(start, start + TRACK_WINDOW);
   return (
     <div style={{ position: 'absolute', top: T(56), left: 16, right: 16, display: 'flex', gap: 3 }} aria-hidden>
-      {track.map((w, i) => (
-        <div key={i} style={{ flex: 1, height: 2.5, borderRadius: 2, background: 'var(--rule)', overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${w}%`, background: 'var(--signal)', transition: 'width 100ms linear' }} />
-        </div>
-      ))}
+      {shown.map((w, j) => {
+        const more = (j === 0 && start > 0) || (j === shown.length - 1 && start + TRACK_WINDOW < n);
+        return (
+          <div key={start + j} style={{ flex: 1, height: 2.5, borderRadius: 2, background: 'var(--rule)', overflow: 'hidden', opacity: more ? 0.45 : 1 }}>
+            <div style={{ height: '100%', width: `${w}%`, background: 'var(--signal)', transition: 'width 100ms linear' }} />
+          </div>
+        );
+      })}
     </div>
   );
 }
