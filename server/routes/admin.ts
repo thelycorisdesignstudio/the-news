@@ -43,6 +43,8 @@ export function adminRoutes(db: DB) {
       name: z.string().trim().min(1).max(60),
       level: z.enum(['global', 'national', 'state', 'city', 'hyper']).optional(),
       country: z.string().regex(/^[A-Z]{2}$/).optional(),
+      city: z.string().max(80).optional(),
+      region: z.string().max(80).optional(),
       beat: z.string().max(40).optional(),
     }),
     items: z.array(z.object({

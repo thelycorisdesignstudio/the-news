@@ -63,9 +63,9 @@ interface PendingRow { url_hash: string; source_id: string; title_key: string; a
  * Items gathered elsewhere (an agent-reach agent with Twitter or Reddit logins, a newsroom tool) go
  * through the same dedupe, write-up and publishing as polled feeds.
  */
-export async function ingestPushed(db: DB, src: { name: string; level?: Source['level']; country?: string; beat?: string }, items: FeedItem[], deps: IngestDeps = {}) {
+export async function ingestPushed(db: DB, src: { name: string; level?: Source['level']; country?: string; city?: string; region?: string; beat?: string }, items: FeedItem[], deps: IngestDeps = {}) {
   const id = `push-${src.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'source'}`;
-  const source: Source = { id, name: src.name, url: `push:${id}`, kind: 'exa', level: src.level ?? 'global', country: src.country, beat: src.beat, everyMin: 0 };
+  const source: Source = { id, name: src.name, url: `push:${id}`, kind: 'exa', level: src.level ?? 'global', country: src.country, city: src.city, region: src.region, beat: src.beat, everyMin: 0 };
   return runCycle(db, { ...deps, sources: [source], search: async () => items, force: true });
 }
 
