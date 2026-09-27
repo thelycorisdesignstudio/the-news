@@ -400,3 +400,27 @@ describe('Exa results must be articles', () => {
     expect(cleanSnippet('### The Labor Market ... Is Weaker | Than the Bond Market Thinks ...')).toBe('The Labor Market Is Weaker Than the Bond Market Thinks');
   });
 });
+
+describe('pull channel and thin feeds', () => {
+  it('loads a collector snapshot once, skipping repeats', async () => {
+    const { pullSnapshot } = await import('../server/ingest/pipeline');
+    const db = openDb(':memory:');
+    const snap = { collectedAt: 'x1', batches: [{ source: { name: 'BBC', level: 'global', beat: 'World' }, items: [{ title: 'Ceasefire agreed in border conflict after UN talks', url: 'https://bbc.co.uk/news/world-123456', excerpt: 'Both governments agreed to a ceasefire on Wednesday after talks brokered by the United Nations ended a week of fighting.', publishedAt: new Date(Date.now() - 3600_000).toISOString() }] }] };
+    const f = (async () => new Response(JSON.stringify(snap))) as unknown as typeof fetch;
+    expect(await pullSnapshot(db, 'https://x/latest.json', f)).toMatchObject({ published: 1, skipped: false });
+    expect(await pullSnapshot(db, 'https://x/latest.json', f)).toMatchObject({ skipped: true });
+  });
+
+  it('tops up a quiet topic selection with the day\'s biggest stories', async () => {
+    const { createApp } = await import('../server/app');
+    const { seedDemoStories } = await import('../server/stories');
+    const request = (await import('supertest')).default;
+    const db = openDb(':memory:');
+    seedDemoStories(db);
+    const app = createApp({ db, mail: async () => {} });
+    const r = await request(app).post('/api/feed').send({ filters: { cov: [], cty: [], plc: [], top: ['Space'], typ: [] } }).expect(200);
+    const space = r.body.stories.filter((s: { topic: string }) => s.topic === 'Space').length;
+    expect(r.body.stories.length).toBeGreaterThan(space);
+    expect(r.body.stories[0].topic).toBe('Space'); // the reader's own topics come first
+  });
+});

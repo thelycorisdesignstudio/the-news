@@ -282,6 +282,23 @@ export function agentReachDoctor(): Promise<unknown> {
 }
 
 /** Runs a cycle now and then every minute; each feed is only polled when its own interval is up. */
+let lastSnapshot = '';
+/** Loads the collector's latest snapshot (skipped when unchanged since the last pull). */
+export async function pullSnapshot(db: DB, url = config.news.snapshotUrl, fetchImpl: typeof fetch = fetch) {
+  if (!url) return null;
+  const res = await fetchImpl(url, { signal: AbortSignal.timeout(30_000), headers: { 'cache-control': 'no-cache' } });
+  if (!res.ok) throw new Error(`snapshot HTTP ${res.status}`);
+  const snap = await res.json() as { collectedAt?: string; batches?: { source: Parameters<typeof ingestPushed>[1]; items: FeedItem[] }[] };
+  if (!snap.batches || snap.collectedAt === lastSnapshot) return { published: 0, merged: 0, skipped: true };
+  lastSnapshot = snap.collectedAt ?? '';
+  let published = 0, merged = 0;
+  for (const b of snap.batches) {
+    const r = await ingestPushed(db, b.source, b.items.slice(0, 200));
+    published += r.published.length; merged += r.merged;
+  }
+  return { published, merged, skipped: false };
+}
+
 export function startIngest(db: DB, log = console): () => void {
   let running = false;
   let stopped = false;
@@ -303,5 +320,9 @@ export function startIngest(db: DB, log = console): () => void {
   void tick();
   const timer = setInterval(tick, 60_000);
   timer.unref();
-  return () => { stopped = true; clearInterval(timer); };
+  const pull = () => pullSnapshot(db).then(r => { if (r && !r.skipped) log.log(`[snapshot] ${r.published} new, ${r.merged} merged`); }).catch(e => log.warn(`[snapshot] ${e instanceof Error ? e.message : e}`));
+  void pull();
+  const pullTimer = setInterval(pull, 5 * 60_000);
+  pullTimer.unref();
+  return () => { stopped = true; clearInterval(timer); clearInterval(pullTimer); };
 }

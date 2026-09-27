@@ -51,11 +51,15 @@ function parse<T>(schema: z.ZodType<T>, body: unknown): T {
   return r.data;
 }
 
+/** A reader's queue never drops below this: when their topics are quiet, the day's top stories fill in. */
+const FEED_MIN = 20;
+
 function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [], max = config.feedMax): Story[] {
   const keepSet = new Set(keep);
   const out: Story[] = [];
+  const all = windowStories(db, config.feedWindowHours);
   let fresh = 0;
-  for (const s of windowStories(db, config.feedWindowHours)) {
+  for (const s of all) {
     if (s.removed) {
       if (keepSet.has(s.id)) out.push({ ...s, summary: '', title: '', removed: true });
       continue;
@@ -67,6 +71,17 @@ function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [],
     if (fresh >= max && !keepSet.has(s.id)) continue;
     if (!keepSet.has(s.id)) fresh++;
     out.push(story);
+  }
+  // Topics narrowed the day to a handful: top it up with the biggest stories elsewhere (same coverage,
+  // country and place rules), after the reader's own.
+  if (fresh < FEED_MIN && filters.top.length) {
+    const have = new Set(out.map(s => s.id));
+    const wider = { ...filters, top: [] };
+    for (const s of all) {
+      if (fresh >= FEED_MIN) break;
+      if (s.removed || have.has(s.id) || !matchesFilters(s, wider, places)) continue;
+      out.push(s); fresh++;
+    }
   }
   return out;
 }
@@ -85,7 +100,7 @@ export function dataRoutes(db: DB) {
 
   r.post('/feed/count', (req, res) => {
     const q = parse(feedQuery, req.body);
-    res.json({ count: feedFor(db, q.filters, q.places).length });
+    res.json({ count: feedFor(db, q.filters, q.places).filter(s => !q.filters.top.length || q.filters.top.includes(s.topic)).length });
   });
 
   // Live updates: a server-sent event whenever new stories land, so open feeds can pull them in.

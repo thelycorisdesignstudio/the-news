@@ -38,6 +38,11 @@ export const config = {
     exa: env.EXA !== '0',
     exaKey: env.EXA_API_KEY || '',
     exaMcpUrl: env.EXA_MCP_URL || 'https://mcp.exa.ai/mcp',
+    /**
+     * Pull channel: the GitHub Actions collector's snapshot (every 15 minutes). Servers that can reach GitHub
+     * but not the news sites still get live news. LIVE_SNAPSHOT_URL='' turns it off.
+     */
+    snapshotUrl: env.LIVE_SNAPSHOT_URL ?? 'https://raw.githubusercontent.com/thelycorisdesignstudio/the-news/live-news/live/latest.json',
     /** Optional: path to the agent-reach CLI; its `doctor --json` report is merged into /api/admin/sources. */
     agentReachBin: env.AGENT_REACH_BIN || '',
   },
