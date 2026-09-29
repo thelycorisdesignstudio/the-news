@@ -1,7 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
-import { GlassBg } from './Glass';
 import { useStore } from '../lib/store';
 
 /* ---------------- device ---------------- */
@@ -74,29 +73,34 @@ export const B = (designBottom: number) => `calc(var(--sb) + ${designBottom - 34
 export function BackButton({ onClick, to }: { onClick?: () => void; to?: string }) {
   const nav = useNavigate();
   return (
-    <button aria-label="back" className="link-btn lg lg-icon" onClick={onClick ?? (() => (to ? nav(to) : nav(-1)))}
-      style={{ position: 'absolute', top: T(58), left: 14, zIndex: 3 }}>
-      <GlassBg />
-      <Icon name="arrow-left" size={20} color="var(--ink)" />
+    <button aria-label="back" className="ctl ctl-icon" onClick={onClick ?? (() => (to ? nav(to) : nav(-1)))}
+      style={{ position: 'absolute', top: T(56), left: 16, zIndex: 3 }}>
+      <Icon name="arrow-left" size={20} />
     </button>
   );
 }
 
-/** Skip · dots · Next row used on every onboarding step. */
+/** Skip · 01 / 05 · Next row used on every onboarding step. */
 export function StepHeader({ step, total = 5, onSkip, onNext, nextEnabled = true, hideNext }: {
   step: number; total?: number; onSkip?: () => void; onNext?: () => void; nextEnabled?: boolean; hideNext?: boolean;
 }) {
+  const pad = (n: number) => String(n).padStart(2, '0');
   return (
-    <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
-      <button className="link-btn lg lg-pill" onClick={onSkip} style={{ font: '500 14px/1 var(--font)', color: 'var(--gray)' }}><GlassBg />Skip</button>
-      <div style={{ display: 'flex', gap: 6 }} aria-label={`step ${step} of ${total}`} role="img">
-        {Array.from({ length: total }, (_, i) => (
-          <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: i === step - 1 ? 'var(--signal)' : 'var(--rule)' }} />
-        ))}
+    <div style={{ position: 'absolute', top: T(58), left: 20, right: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 3 }}>
+      <button className="link-btn" onClick={onSkip} style={{ minWidth: 72, height: 38, textAlign: 'left', font: '600 14px/1 var(--font)', color: 'var(--gray)', textDecoration: 'underline', textUnderlineOffset: 4, textDecorationThickness: 1 }}>Skip</button>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }} aria-label={`step ${step} of ${total}`} role="img">
+        <span style={{ font: '700 12px/1 var(--font)', letterSpacing: '.08em', color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{pad(step)} <span style={{ color: 'var(--gray-2)', fontWeight: 600 }}>/ {pad(total)}</span></span>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {Array.from({ length: total }, (_, i) => (
+            <span key={i} style={{ width: i === step - 1 ? 18 : 8, height: 2, borderRadius: 1, background: i < step ? 'var(--ink)' : 'var(--rule-3)', transition: 'width 240ms, background 240ms' }} />
+          ))}
+        </div>
       </div>
-      {hideNext ? <span style={{ width: 58 }} /> : (
-        <button className="link-btn lg lg-pill" disabled={!nextEnabled} onClick={onNext}
-          style={{ font: '600 14px/1 var(--font)', color: nextEnabled ? 'var(--signal)' : 'var(--gray-2)', transition: 'color 150ms' }}><GlassBg />Next</button>
+      {hideNext ? <span style={{ minWidth: 72 }} /> : (
+        <button className="ctl ctl-pill" disabled={!nextEnabled} onClick={onNext}
+          style={{ minWidth: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '10px 12px 10px 16px', borderColor: nextEnabled ? 'var(--line)' : undefined }}>
+          Next<Icon name="arrow-right" size={16} />
+        </button>
       )}
     </div>
   );
@@ -105,7 +109,7 @@ export function StepHeader({ step, total = 5, onSkip, onNext, nextEnabled = true
 export function Title({ children, sub, top = 108, style }: { children: ReactNode; sub?: ReactNode; top?: number; style?: CSSProperties }) {
   return (
     <div className="rise" style={{ position: 'absolute', top: T(top), left: 24, right: 24, display: 'flex', flexDirection: 'column', gap: 8, ...style }}>
-      <h2 style={{ margin: 0, font: '700 28px/1.15 var(--font)', letterSpacing: '-0.03em', color: 'var(--ink)' }}>{children}</h2>
+      <h2 style={{ margin: 0, font: '800 30px/1.1 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'balance' }}>{children}</h2>
       {sub && <p style={{ margin: 0, font: '400 14px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>{sub}</p>}
     </div>
   );
@@ -122,15 +126,21 @@ export function Footer({ children, bottom = 44, gap = 12, style, className }: { 
 
 /* ---------------- controls ---------------- */
 
-export function Button({ variant = 'primary', loading, icon, children, style, ...rest }: {
-  variant?: 'primary' | 'secondary' | 'dark' | 'light' | 'danger'; loading?: boolean; icon?: IconName;
+/**
+ * Outlined pill. The primary action puts its label on the left and a circled arrow on the right (pass
+ * `arrow={false}` to drop it); the others centre their label. A trailing "→" in a label becomes the arrow.
+ */
+export function Button({ variant = 'primary', loading, icon, arrow, children, style, ...rest }: {
+  variant?: 'primary' | 'secondary' | 'dark' | 'light' | 'danger'; loading?: boolean; icon?: IconName; arrow?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  const label = typeof children === 'string' ? children.replace(/\s*→\s*$/, '') : children;
+  const withArrow = arrow ?? (variant === 'primary' && !icon);
   return (
     <button {...rest} disabled={rest.disabled || loading} aria-busy={loading || undefined}
-      className={`btn btn-${variant} lg${loading ? ' is-loading' : ''} ${rest.className ?? ''}`} style={style}>
-      <GlassBg />
-      {loading ? <Icon name="loading" size={20} spin /> : icon ? <Icon name={icon} size={20} /> : null}
-      {children}
+      className={`btn btn-${variant}${withArrow ? ' btn--arrow' : ''}${loading ? ' is-loading' : ''} ${rest.className ?? ''}`} style={style}>
+      {!withArrow && (loading ? <Icon name="loading" size={20} spin /> : icon ? <Icon name={icon} size={20} /> : null)}
+      <span className="btn__label">{label}</span>
+      {withArrow && <span className="btn__arrow" aria-hidden>{loading ? <Icon name="loading" size={18} spin /> : <Icon name="arrow-right" size={18} />}</span>}
     </button>
   );
 }
@@ -177,18 +187,17 @@ export function Banner({ children }: { children: ReactNode }) {
 
 export function Check({ on, size = 22 }: { on: boolean; size?: number }) {
   return on ? (
-    <span style={{ flex: 'none', width: size, height: size, borderRadius: '50%', background: 'var(--signal)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name="tick" size={14} color="#FFFFFF" />
+    <span style={{ flex: 'none', width: size, height: size, borderRadius: '50%', background: 'var(--signal)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'tnPop 180ms ease-out both' }}>
+      <Icon name="tick" size={14} color="var(--on-signal)" />
     </span>
-  ) : <span style={{ flex: 'none', width: size, height: size, borderRadius: '50%', border: '1.5px solid var(--rule-3)' }} />;
+  ) : <span style={{ flex: 'none', width: size, height: size, borderRadius: '50%', border: '1px solid var(--line-soft)' }} />;
 }
 
 export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button role="switch" aria-checked={on} aria-label={label} className={`link-btn lg lg-switch${on ? ' is-on' : ''}`} onClick={() => onChange(!on)}
+    <button role="switch" aria-checked={on} aria-label={label} className={`ctl ctl-switch${on ? ' is-on' : ''}`} onClick={() => onChange(!on)}
       style={{ flex: 'none', width: 51, height: 31, borderRadius: 16, position: 'relative' }}>
-      <GlassBg />
-      <span style={{ position: 'absolute', top: 2, left: on ? 22 : 2, width: 27, height: 27, borderRadius: '50%', background: '#FFFFFF', boxShadow: '0 2px 4px rgba(10,10,10,.2)', transition: 'left 150ms' }} />
+      <span style={{ position: 'absolute', top: 2, left: on ? 22 : 2, width: 27, height: 27, borderRadius: '50%', background: on ? 'var(--on-signal)' : '#FFFFFF', boxShadow: '0 2px 4px rgba(10,10,10,.18)', transition: 'left 180ms cubic-bezier(.2,.8,.2,1)' }} />
     </button>
   );
 }
@@ -197,12 +206,11 @@ export function Segmented<T extends string | number>({ options, value, onChange,
   options: { v: T; t: string }[]; value: T; onChange: (v: T) => void; label: string; style?: CSSProperties; compact?: boolean;
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="lg" style={{ display: 'grid', gridTemplateColumns: `repeat(${options.length}, 1fr)`, padding: 3, borderRadius: 50, ...style }}>
-      <GlassBg />
+    <div role="radiogroup" aria-label={label} style={{ display: 'grid', gridTemplateColumns: `repeat(${options.length}, 1fr)`, padding: 3, borderRadius: 50, border: '1px solid var(--line-soft)', background: 'color-mix(in srgb, var(--card) 62%, transparent)', ...style }}>
       {options.map(o => (
-        <button key={String(o.v)} role="radio" aria-checked={o.v === value} className={`link-btn${o.v === value ? ' lg lg-signal' : ''}`} onClick={() => onChange(o.v)}
-          style={{ height: compact ? 28 : 34, borderRadius: 50, color: o.v === value ? '#FFFFFF' : 'var(--gray)', font: `600 ${compact ? 12 : 13}px/1 var(--font)`, transition: 'color 150ms' }}>
-          {o.v === value && <GlassBg />}{o.t}
+        <button key={String(o.v)} role="radio" aria-checked={o.v === value} className="link-btn" onClick={() => onChange(o.v)}
+          style={{ height: compact ? 28 : 34, borderRadius: 50, background: o.v === value ? 'var(--signal)' : 'transparent', color: o.v === value ? 'var(--on-signal)' : 'var(--gray)', font: `600 ${compact ? 12 : 13}px/1 var(--font)`, transition: 'color 160ms, background 160ms' }}>
+          {o.t}
         </button>
       ))}
     </div>
@@ -217,7 +225,7 @@ export function Shimmer({ w, h, r = 8, style }: { w: number | string; h: number;
 
 export function LoaderBar({ width = 120, kind = 'load' }: { width?: number; kind?: 'load' | 'fill' }) {
   return (
-    <div role="progressbar" aria-label="loading" style={{ width, height: 3, borderRadius: 2, background: 'var(--rule)', overflow: 'hidden' }}>
+    <div role="progressbar" aria-label="loading" style={{ width, height: 2, borderRadius: 1, background: 'var(--rule-2)', overflow: 'hidden' }}>
       <div style={{ width: '100%', height: '100%', background: 'var(--signal)', transformOrigin: 'left', animation: kind === 'load' ? 'tnLoad 1.9s linear infinite' : 'tnFill 1.5s ease-in-out infinite' }} />
     </div>
   );
@@ -227,10 +235,10 @@ export function LoaderBar({ width = 120, kind = 'load' }: { width?: number; kind
 export function StateMessage({ icon, title, body, iconTint, pulse }: { icon: IconName; title: ReactNode; body?: ReactNode; iconTint?: boolean; pulse?: boolean }) {
   return (
     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 32px', textAlign: 'center' }}>
-      <div style={{ width: 64, height: 64, borderRadius: '50%', background: iconTint ? 'var(--signal-tint)' : 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name={icon} size={28} color={iconTint ? 'var(--signal)' : 'var(--ink)'} style={pulse ? { animation: 'tnPulse 1.2s linear infinite' } : undefined} />
+      <div style={{ width: 64, height: 64, borderRadius: '50%', border: '1px solid var(--line-soft)', background: iconTint ? 'var(--signal-tint)' : 'color-mix(in srgb, var(--card) 62%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name={icon} size={28} color="var(--ink)" style={pulse ? { animation: 'tnPulse 1.2s linear infinite' } : undefined} />
       </div>
-      <h3 style={{ margin: '24px 0 0', font: '700 24px/1.2 var(--font)', letterSpacing: '-0.03em' }}>{title}</h3>
+      <h3 style={{ margin: '24px 0 0', font: '800 26px/1.15 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'balance' }}>{title}</h3>
       {body && <p style={{ margin: '8px 0 0', maxWidth: 280, font: '400 14px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>{body}</p>}
     </div>
   );
@@ -240,9 +248,9 @@ export function StateMessage({ icon, title, body, iconTint, pulse }: { icon: Ico
 export function EditorialMark() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }} aria-hidden>
-      <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--rule)' }} />
-      <div style={{ width: 28, height: 4, borderRadius: 2, background: 'var(--rule)' }} />
-      <div style={{ width: 16, height: 4, borderRadius: 2, background: 'var(--rule)' }} />
+      <div style={{ width: 40, height: 3, borderRadius: 2, background: 'var(--ink)' }} />
+      <div style={{ width: 28, height: 3, borderRadius: 2, background: 'var(--rule-3)' }} />
+      <div style={{ width: 16, height: 3, borderRadius: 2, background: 'var(--rule-2)' }} />
     </div>
   );
 }

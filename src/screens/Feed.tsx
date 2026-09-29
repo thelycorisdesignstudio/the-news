@@ -5,7 +5,6 @@ import { Chevron, FeedCard, FeedNav, FeedSkeleton, FeedStateCard, ProgressTrack,
 import { Icon } from '../components/Icon';
 import { Wordmark } from '../components/Brand';
 import { Button, EditorialMark, Footer, Sheet, Shimmer, StateMessage, T } from '../components/ui';
-import { GlassBg } from '../components/Glass';
 import { api, ApiError } from '../lib/api';
 import { shareStory } from '../lib/device';
 import { haptic, useDoubleTap, useSnapPager } from '../lib/pager';
@@ -235,7 +234,7 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
     <>
       {pull > 0 && (
         <div style={{ position: 'absolute', top: T(60), left: 0, right: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} role="status">
-          <Icon name="loading" size={18} color="var(--signal)" spin={refreshing} style={{ transform: refreshing ? undefined : `rotate(${pull * 4}deg)` }} />
+          <Icon name="loading" size={18} color="var(--ink)" spin={refreshing} style={{ transform: refreshing ? undefined : `rotate(${pull * 4}deg)` }} />
           <span style={{ font: '500 13px/1 var(--font)', color: 'var(--gray)' }}>{refreshing ? 'checking for new stories' : pull > 56 ? 'release to refresh' : 'pull to refresh'}</span>
         </div>
       )}
@@ -278,7 +277,7 @@ function CaughtUp({ segments, count, saved, onTop }: { segments: number; count: 
       <ProgressTrack track={Array(segments).fill(100)} />
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
         <EditorialMark />
-        <h3 style={{ margin: '24px 0 0', font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>you're caught up.</h3>
+        <h3 style={{ margin: '24px 0 0', font: '800 30px/1.1 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)' }}>you're caught up.</h3>
         <p style={{ margin: '8px 0 0', maxWidth: 260, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>that's everything for today. nine seconds at a time.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 32 }}>
           <Stat v={count} l="stories" />
@@ -287,7 +286,7 @@ function CaughtUp({ segments, count, saved, onTop }: { segments: number; count: 
           <div style={{ width: 1, height: 32, background: 'var(--rule)' }} />
           <Stat v={saved} l="saved" />
         </div>
-        <button onClick={onTop} className="lg lg-signal" style={{ marginTop: 32, padding: '14px 28px', border: 0, borderRadius: 50, background: 'transparent', color: '#FFFFFF', font: '600 14px/1 var(--font)', cursor: 'pointer' }}><GlassBg />back to top</button>
+        <Button onClick={onTop} style={{ marginTop: 36, width: 220 }}>back to top</Button>
       </div>
     </div>
   );
@@ -307,41 +306,41 @@ function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: nu
     .map(t => new RegExp(`(^|[^\\p{L}\\p{N}])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'iu')), [q]);
   const matches = (s: Story) => !terms.length || terms.every(re => re.test(`${s.title} ${s.summary} ${s.source} ${s.cat} ${locationTag(s) ?? ''}`));
   const rows = stories.map((s, i) => ({ s, prog: track[i] })).filter(r => !r.s.removed && (!cat || r.s.cat === cat) && matches(r.s));
-  const chip = (on: boolean) => ({ flex: 'none', padding: '8px 14px', borderRadius: 50, border: 0, background: 'transparent', color: on ? '#FFFFFF' : 'var(--ink)', font: '600 13px/1 var(--font)', cursor: 'pointer' } as const);
+  const chip = { flex: 'none', padding: '9px 15px', borderRadius: 50, font: '600 13px/1 var(--font)' } as const;
   return (
     <>
       <FeedNav {...nav} view="list" showFilter={false} top={62} />
       <div role="search" style={{ position: 'absolute', top: T(106), left: 20, right: 20 }}>
-        <div className="field frost" style={{ height: 44, borderRadius: 50 }}>
+        <div className="field" style={{ height: 46, borderRadius: 50 }}>
           <Icon name="search" size={18} color="var(--gray-2)" />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="search today's stories" aria-label="search today's stories" type="search" enterKeyHint="search" autoComplete="off" />
           {q && <button className="link-btn" aria-label="clear search" onClick={() => setQ('')} style={{ display: 'flex' }}><Icon name="cancel-circle" size={18} color="var(--gray-2)" /></button>}
         </div>
       </div>
       <div className="no-scrollbar" role="tablist" style={{ position: 'absolute', top: T(162), left: 0, right: 0, display: 'flex', gap: 8, padding: '0 20px', overflowX: 'auto' }}>
-        <button role="tab" aria-selected={!cat} className={`lg${!cat ? ' lg-signal' : ''}`} style={chip(!cat)} onClick={() => setCat(null)}><GlassBg />All</button>
-        {cats.map(c => <button key={c} role="tab" aria-selected={cat === c} className={`lg${cat === c ? ' lg-signal' : ''}`} style={chip(cat === c)} onClick={() => setCat(c)}><GlassBg />{c}</button>)}
+        <button role="tab" aria-selected={!cat} className={`ctl${!cat ? ' ctl-on' : ''}`} style={chip} onClick={() => setCat(null)}>All</button>
+        {cats.map(c => <button key={c} role="tab" aria-selected={cat === c} className={`ctl${cat === c ? ' ctl-on' : ''}`} style={chip} onClick={() => setCat(c)}>{c}</button>)}
       </div>
       <div className="no-scrollbar content-in" style={{ position: 'absolute', top: T(210), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {!rows.length && (
           <div role="status" style={{ padding: '48px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <span style={{ font: '700 20px/1.25 var(--font)', letterSpacing: '-0.03em' }}>{q ? `nothing matches "${q.trim()}".` : 'nothing here yet.'}</span>
+            <span style={{ font: '800 22px/1.2 var(--font)', letterSpacing: '-0.035em' }}>{q ? `nothing matches "${q.trim()}".` : 'nothing here yet.'}</span>
             <span style={{ font: '400 14px/1.5 var(--font)', color: 'var(--gray)' }}>{q ? 'try another word, or search all topics.' : 'pick another topic above.'}</span>
-            {(q || cat) && <button className="link-btn" onClick={() => { setQ(''); setCat(null); }} style={{ marginTop: 8, font: '600 14px/1 var(--font)', color: 'var(--signal)' }}>clear search</button>}
+            {(q || cat) && <button className="link-btn" onClick={() => { setQ(''); setCat(null); }} style={{ marginTop: 8, font: '600 14px/1 var(--font)', color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 4 }}>clear search</button>}
           </div>
         )}
         {rows.map(({ s, prog }) => (
-          <button key={s.id} onClick={() => onRead(s)} className="card row-btn frost" style={{ flex: 'none', padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, border: '1px solid var(--rule)', background: 'var(--card)' }}>
+          <button key={s.id} onClick={() => onRead(s)} className="card row-btn" style={{ flex: 'none', padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span className="pill-cat" style={{ padding: '4px 8px', fontSize: 10 }}>{s.cat}</span>
               {s.type === 'breaking' && <span style={{ padding: '4px 8px', borderRadius: 50, background: 'var(--alert)', color: '#FFFFFF', font: '700 10px/1.2 var(--font)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Breaking</span>}
               {locationTag(s) && <span style={{ font: '500 11px/1 var(--font)', color: 'var(--gray)' }}>{locationTag(s)}</span>}
             </div>
-            <h4 style={{ margin: 0, font: '700 20px/1.25 var(--font)', letterSpacing: '-0.03em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h4>
+            <h4 style={{ margin: 0, font: '800 20px/1.2 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h4>
             <p style={{ margin: 0, font: '400 13px/1.5 var(--font)', color: 'var(--gray)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{s.summary}</p>
             <div style={{ alignSelf: 'stretch', display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
-              <span style={{ flex: 'none', font: '500 12px/1 var(--font)', color: 'var(--ink)' }}>{s.source} <span style={{ color: 'var(--gray)', fontWeight: 400 }}>· {timeAgo(s.publishedAt, now)}</span></span>
-              <div style={{ flex: 1, height: 2, borderRadius: 1, background: 'var(--rule)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${prog}%`, background: 'var(--signal)' }} /></div>
+              <span style={{ flex: 'none', font: '700 12px/1 var(--font)', color: 'var(--ink)' }}>{s.source} <span style={{ color: 'var(--gray)', fontWeight: 400 }}>· {timeAgo(s.publishedAt, now)}</span></span>
+              <div style={{ flex: 1, height: 2, borderRadius: 1, background: 'var(--rule-2)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${prog}%`, background: 'var(--signal)' }} /></div>
             </div>
           </button>
         ))}
@@ -392,18 +391,18 @@ export function ReaderSheet({ story, onClose }: { story: Story; onClose: () => v
     <Sheet onClose={onClose} label={s.title}>
       <div style={{ padding: '8px 24px 64px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <span className="pill-cat">{s.cat}</span>
-        <h2 style={{ margin: '16px 0 0', font: '700 32px/1.25 var(--font)', letterSpacing: '-0.03em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h2>
+        <h2 style={{ margin: '16px 0 0', font: '800 30px/1.15 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h2>
         {gone ? (
           <p style={{ margin: '20px 0 0', font: '400 16px/1.7 var(--font)', color: 'var(--gray)' }}>this story is no longer available. the publisher removed it.</p>
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
-              <div style={{ width: 20, height: 20, borderRadius: 5, background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 10px/1 var(--font)', color: 'var(--gray)' }}>{s.source[0]}</div>
-              <span style={{ font: '500 13px/1 var(--font)' }}>{s.source}</span>
+              <div style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--line-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 10px/1 var(--font)', color: 'var(--ink)' }}>{s.source[0]}</div>
+              <span style={{ font: '700 13px/1 var(--font)' }}>{s.source}</span>
               <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--gray)' }} />
               <span style={{ font: '400 12px/1 var(--font)', color: 'var(--gray)' }}>{timeAgo(s.publishedAt)}</span>
             </div>
-            <div style={{ width: 40, height: 1, background: 'var(--rule)', margin: '20px 0' }} />
+            <div style={{ width: 36, height: 2, borderRadius: 1, background: 'var(--ink)', margin: '20px 0' }} />
             <p style={{ margin: 0, font: '400 calc(16px * var(--ts, 1))/1.7 var(--font)', color: 'var(--body)' }}>{s.summary}</p>
             {full ? full.more?.map(m => (
               <div key={m.h} style={{ display: 'contents' }}>
@@ -419,7 +418,9 @@ export function ReaderSheet({ story, onClose }: { story: Story; onClose: () => v
                 {['100%', '92%', '60%'].map((w, i) => <Shimmer key={i} w={w} h={14} r={7} style={{ marginBottom: 12 }} />)}
               </div>
             )}
-            <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ marginTop: 32, font: '600 14px/1 var(--font)', color: 'var(--signal)' }}>open original article →</a>
+            <a href={s.url} target="_blank" rel="noopener noreferrer" className="ctl read-pill" style={{ marginTop: 32, borderColor: 'var(--line)', textDecoration: 'none', color: 'var(--ink)' }}>
+              open original article<span className="btn__arrow" aria-hidden><Icon name="arrow-right" size={16} /></span>
+            </a>
           </>
         )}
       </div>
@@ -450,7 +451,7 @@ function FilterSheet({ onClose }: { onClose: () => void }) {
   return (
     <Sheet onClose={onClose} top={64} label="filters" scroll={false}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 20px 16px', borderBottom: '.5px solid var(--rule)', flex: 'none' }}>
-        <h3 style={{ margin: 0, font: '700 24px/1 var(--font)', letterSpacing: '-0.03em' }}>filters</h3>
+        <h3 style={{ margin: 0, font: '800 26px/1 var(--font)', letterSpacing: '-0.035em' }}>filters</h3>
         <button className="link-btn" onClick={() => updatePrefs({ filters: { cov: [], cty: [], plc: [], top: [], typ: [] } })} style={{ font: '500 14px/1 var(--font)', color: 'var(--gray)' }}>reset</button>
       </div>
       <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '8px 20px 24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -464,14 +465,14 @@ function FilterSheet({ onClose }: { onClose: () => void }) {
               {g.items.map(t => {
                 const on = f[g.k].includes(t);
                 return (
-                  <button key={t} aria-pressed={on} className={`chip-sm lg${on ? ' is-on' : ''}`} onClick={() => toggle(g.k, t)}>
-                    <GlassBg />{on && <Icon name="tick" size={13} color="var(--signal)" style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
+                  <button key={t} aria-pressed={on} className={`chip-sm${on ? ' is-on' : ''}`} onClick={() => toggle(g.k, t)}>
+                    {on && <Icon name="tick" size={13} style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
                   </button>
                 );
               })}
               {g.add && (
-                <button onClick={() => nav(g.add!)} className="lg" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '9px 12px', borderRadius: 50, border: '.5px dashed var(--gray-2)', background: 'transparent', font: '600 13px/1 var(--font)', color: 'var(--gray)', cursor: 'pointer' }}>
-                  <GlassBg /><Icon name="add" size={13} color="var(--gray)" />add
+                <button onClick={() => nav(g.add!)} className="ctl" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '9px 12px', borderRadius: 50, borderStyle: 'dashed', background: 'transparent', font: '600 13px/1 var(--font)', color: 'var(--gray)' }}>
+                  <Icon name="add" size={13} color="var(--gray)" />add
                 </button>
               )}
             </div>

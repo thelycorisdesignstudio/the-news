@@ -100,10 +100,29 @@ function RouteFade({ children }: { children: (location: Location) => ReactNode }
   );
 }
 
+/** The splash plays in full once per session (about two seconds), then fades into the app. */
+const INTRO_MS = 1900;
+function useIntro() {
+  const [first] = useState(() => { try { return !sessionStorage.getItem('tn-intro'); } catch { return false; } });
+  const [phase, setPhase] = useState<'show' | 'leave' | 'done'>(first ? 'show' : 'done');
+  useEffect(() => {
+    if (!first) return;
+    try { sessionStorage.setItem('tn-intro', '1'); } catch { /* private mode: plays each launch */ }
+    const hold = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 300 : INTRO_MS;
+    const t1 = window.setTimeout(() => setPhase('leave'), hold);
+    const t2 = window.setTimeout(() => setPhase('done'), hold + 420);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+  }, [first]);
+  return phase;
+}
+
 function Shell() {
   const { booting } = useStore();
+  const intro = useIntro();
   useFollowTravel();
-  if (booting) return <Splash />;
+  // One Splash element for both the boot and the intro, so its animation never restarts mid-way.
+  const splash = (booting || intro !== 'done') && <Splash leaving={!booting && intro === 'leave'} />;
+  if (booting) return <>{null}{null}{splash}</>;
   const o = (el: ReactNode) => <RequireOnboarded>{el}</RequireOnboarded>;
   const u = (el: ReactNode) => <RequireUser>{el}</RequireUser>;
   return (
@@ -150,6 +169,7 @@ function Shell() {
       </ErrorBoundary>
       )}</RouteFade>
       <SessionExpired />
+      {splash}
     </>
   );
 }

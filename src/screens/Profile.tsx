@@ -7,7 +7,6 @@ import { BackButton, Button, Dialog, EditorialMark, FieldError, Footer, Segmente
 import { FeedbackDialog } from '../components/Feedback';
 import { api, ApiError } from '../lib/api';
 import { cachedFeed } from '../lib/feed';
-import { GlassBg } from '../components/Glass';
 import { disableNotifications, enableNotifications } from '../lib/device';
 import { useStore } from '../lib/store';
 import { ReaderSheet } from './Feed';
@@ -43,7 +42,7 @@ function Section({ title }: { title: string }) {
 function Stat({ v, l }: { v: string | number; l: string }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <span style={{ font: '700 22px/1 var(--font)', letterSpacing: '-0.02em', color: 'var(--ink)' }}>{v}</span>
+      <span style={{ font: '800 22px/1 var(--font)', letterSpacing: '-0.02em', color: 'var(--ink)' }}>{v}</span>
       <span style={{ font: '400 12px/1 var(--font)', color: 'var(--gray)' }}>{l}</span>
     </div>
   );
@@ -64,17 +63,17 @@ export function Profile() {
   return (
     <div className="screen">
       <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <button className="link-btn lg lg-icon" aria-label="back" onClick={() => nav('/')} style={{ position: 'absolute', left: -6 }}><GlassBg /><Icon name="arrow-left" size={20} /></button>
+        <button className="ctl ctl-icon" aria-label="back" onClick={() => nav('/')} style={{ position: 'absolute', left: -6 }}><Icon name="arrow-left" size={20} /></button>
         <span style={{ font: '600 15px/1 var(--font)' }}>Profile</span>
       </div>
       <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(100), left: 0, right: 0, bottom: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', maskImage: 'linear-gradient(transparent, #000 14px)', WebkitMaskImage: 'linear-gradient(transparent, #000 14px)' }}>
         <button className="row-btn" onClick={() => nav(user ? '/profile/edit' : '/login')} aria-label={user ? 'edit profile' : 'log in'}
           style={{ padding: '8px 20px 0', display: 'flex', alignItems: 'center', gap: 16, flex: 'none' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--signal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '600 18px/1 var(--font)', color: 'var(--signal)', flex: 'none' }}>
+          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--signal)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 19px/1 var(--font)', color: 'var(--on-signal)', flex: 'none' }}>
             {user ? initials(user.name) : <Icon name="user" size={24} color="var(--signal)" />}
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-            <span style={{ font: '700 24px/1.1 var(--font)', letterSpacing: '-0.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name ?? 'not signed in'}</span>
+            <span style={{ font: '800 24px/1.1 var(--font)', letterSpacing: '-0.035em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name ?? 'not signed in'}</span>
             <span style={{ font: '400 13px/1.3 var(--font)', color: 'var(--gray)' }}>{since ? `reading since ${since}` : 'log in to sync your topics, places and saves.'}</span>
           </div>
           <Icon name="arrow-right" size={18} color="var(--gray-2)" />
@@ -216,12 +215,12 @@ function StoryList({ items, onOpen, saved }: { items: { story: Story; at: number
         <div key={s.id} className="card" style={{ position: 'relative', flex: 'none' }}>
           <button className="row-btn" onClick={() => onOpen(s)} style={{ padding: saved ? '16px 48px 16px 16px' : 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
             <span className="pill-cat" style={{ padding: '4px 8px', fontSize: 10 }}>{s.cat}</span>
-            <h4 style={{ margin: 0, font: '700 20px/1.25 var(--font)', letterSpacing: '-0.03em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h4>
+            <h4 style={{ margin: 0, font: '800 20px/1.25 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h4>
             <span style={{ font: '500 12px/1 var(--font)', color: 'var(--ink)' }}>{s.source} <span style={{ color: 'var(--gray)', fontWeight: 400 }}>· {saved ? `saved ${when(at)}` : `read ${when(at)}`}</span></span>
           </button>
           {saved && (
-            <button aria-label="remove from saved" className="link-btn lg lg-icon lg-soft" onClick={() => toggleSave(s)} style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32 }}>
-              <GlassBg /><Icon name="bookmark-check" size={18} color="var(--signal)" />
+            <button aria-label="remove from saved" className="ctl ctl-icon ctl-soft" onClick={() => toggleSave(s)} style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32 }}>
+              <Icon name="bookmark-check" size={18} color="var(--signal)" />
             </button>
           )}
         </div>
@@ -233,7 +232,7 @@ function StoryList({ items, onOpen, saved }: { items: { story: Story; at: number
 function ListHeader({ title, count, action }: { title: string; count: string; action?: ReactNode }) {
   return (
     <div className="rise" style={{ position: 'absolute', top: T(108), left: 20, right: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-      <h2 style={{ margin: 0, font: '700 28px/1.1 var(--font)', letterSpacing: '-0.03em' }}>{title}</h2>
+      <h2 style={{ margin: 0, font: '800 28px/1.1 var(--font)', letterSpacing: '-0.035em' }}>{title}</h2>
       {action ?? <span style={{ font: '400 13px/1 var(--font)', color: 'var(--gray)' }}>{count}</span>}
     </div>
   );
@@ -243,7 +242,7 @@ function EmptyList({ title, body }: { title: string; body: string }) {
   return (
     <div className="rise" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
       <EditorialMark />
-      <h3 style={{ margin: '24px 0 0', font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>{title}</h3>
+      <h3 style={{ margin: '24px 0 0', font: '800 24px/1.25 var(--font)', letterSpacing: '-0.035em' }}>{title}</h3>
       <p style={{ margin: '8px 0 0', maxWidth: 260, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>{body}</p>
     </div>
   );
@@ -362,7 +361,7 @@ function Legal({ title, children }: { title: string; children: ReactNode }) {
     <div className="screen">
       <BackButton />
       <div className="no-scrollbar" style={{ position: 'absolute', top: T(108), left: 24, right: 24, bottom: 0, overflowY: 'auto', paddingBottom: 'calc(var(--sb) + 24px)', font: '400 14px/1.7 var(--font)', color: 'var(--body)' }}>
-        <h2 style={{ margin: '0 0 16px', font: '700 28px/1.15 var(--font)', letterSpacing: '-0.03em', color: 'var(--ink)' }}>{title}</h2>
+        <h2 style={{ margin: '0 0 16px', font: '800 28px/1.15 var(--font)', letterSpacing: '-0.035em', color: 'var(--ink)' }}>{title}</h2>
         {children}
       </div>
     </div>

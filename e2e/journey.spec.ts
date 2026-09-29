@@ -20,7 +20,7 @@ test('first launch through onboarding to the swipe feed', async ({ page }) => {
 
   // 03 → 04
   await expect(page.getByRole('heading', { name: 'what do you follow?' })).toBeVisible({ timeout: 5000 });
-  const cont = page.getByRole('button', { name: 'continue →' });
+  const cont = page.getByRole('button', { name: 'continue' });
   for (const t of ['AI Models', 'AI Policy']) await page.getByRole('button', { name: t, exact: true }).click();
   await expect(cont).toBeDisabled();
   await page.getByRole('button', { name: 'Robotics', exact: true }).click();
@@ -57,8 +57,8 @@ test('first launch through onboarding to the swipe feed', async ({ page }) => {
   // Save shows the toast; the reader sheet opens and closes.
   await page.getByRole('button', { name: 'bookmark', exact: true }).first().click();
   await expect(page.getByText('saved to reading list')).toBeVisible();
-  await page.getByRole('button', { name: 'read full article →' }).first().click();
-  await expect(page.getByRole('link', { name: 'open original article →' })).toBeVisible();
+  await page.getByRole('button', { name: 'read full article' }).first().click();
+  await expect(page.getByRole('link', { name: 'open original article' })).toBeVisible();
   await page.keyboard.press('Escape');
 
   // The list view shows the whole queue, including the hyperlocal story with its distance.
@@ -109,7 +109,7 @@ test('a session that lapses while the app is open shows the signed-out pop-up', 
   await context.addCookies([{ name: 'tn_session', value: 'revoked', url: 'http://localhost:8788' }]);
   // …and the next synced change finds out.
   for (const t of ['AI Models', 'AI Policy', 'Robotics']) await page.getByRole('button', { name: t, exact: true }).click();
-  await page.getByRole('button', { name: 'continue →' }).click();
+  await page.getByRole('button', { name: 'continue' }).click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible({ timeout: 5000 });
   await expect(dialog.getByText("you've been signed out.")).toBeVisible();

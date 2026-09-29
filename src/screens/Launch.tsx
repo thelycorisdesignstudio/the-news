@@ -1,15 +1,26 @@
 import { useNavigate } from 'react-router-dom';
 import { Wordmark } from '../components/Brand';
-import { LoaderBar } from '../components/ui';
-import { GlassBg } from '../components/Glass';
+import { Button } from '../components/ui';
 import { storage } from '../lib/storage';
 
-/** 01 · Splash. Wordmark at 2×; the loader is the only colour on screen. */
-export function Splash() {
+/**
+ * 01 · Splash. The gradient belt opened out to the full screen, top to bottom: the nine cells of the mark
+ * build one by one, the last one (the story you're on) keeps a slow beat, the wordmark rises under it.
+ */
+export function Splash({ leaving }: { leaving?: boolean }) {
   return (
-    <div className="screen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }} aria-busy="true">
-      <Wordmark size="lg" />
-      <div style={{ marginTop: 24 }}><LoaderBar width={40} kind="fill" /></div>
+    <div className={`splash${leaving ? ' is-leaving' : ''}`} aria-busy="true" aria-label="The News is loading" role="status">
+      <div className="splash__sky" aria-hidden />
+      <div className="splash__glow" aria-hidden />
+      <p className="splash__tag" aria-hidden>nine seconds.<br />the whole picture.</p>
+      <div className="splash__mark" aria-hidden>
+        {Array.from({ length: 9 }, (_, i) => <span key={i} style={{ animationDelay: `${160 + i * 55}ms` }} />)}
+      </div>
+      <div className="splash__word"><Wordmark size="xl" white /></div>
+      <div className="splash__foot" aria-hidden>
+        <div className="splash__line"><i /></div>
+        <span className="splash__by">A Lycoris Product</span>
+      </div>
     </div>
   );
 }
@@ -29,25 +40,25 @@ export function Landing() {
     <div className="page">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', paddingTop: 'calc(var(--st) + 12px)' }}>
         <Wordmark size="sm" />
-        <button onClick={start} className="lg lg-signal" style={{ padding: '10px 16px', border: 0, borderRadius: 50, background: 'transparent', color: '#FFFFFF', font: '600 13px/1 var(--font)', cursor: 'pointer' }}><GlassBg />Start Reading</button>
+        <button onClick={start} className="ctl ctl-pill" style={{ borderColor: 'var(--line)', font: '600 13px/1 var(--font)' }}>Start Reading</button>
       </div>
       <div style={{ padding: '56px 24px 0', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <span className="eyebrow" style={{ letterSpacing: '.08em' }}>AI &amp; technology, daily</span>
-        <h1 style={{ margin: '16px 0 0', font: '700 38px/1.1 var(--font)', letterSpacing: '-0.03em', color: 'var(--ink)' }}>be dangerously well informed.</h1>
+        <h1 style={{ margin: '16px 0 0', font: '800 42px/1.04 var(--font)', letterSpacing: '-0.04em', color: 'var(--headline)', textWrap: 'balance' }}>be dangerously well informed.</h1>
         <p style={{ margin: '16px 0 0', font: '300 16px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>The day's most important stories in AI and technology, one full-screen card each. Read in nine seconds, swipe for the next.</p>
-        <button onClick={start} className="lg lg-signal" style={{ marginTop: 32, padding: '16px 28px', border: 0, borderRadius: 50, background: 'transparent', color: '#FFFFFF', font: '600 16px/1 var(--font)', cursor: 'pointer' }}><GlassBg />start reading free</button>
+        <Button onClick={start} style={{ marginTop: 32, width: 250 }}>start reading free</Button>
       </div>
       <div style={{ padding: '56px 24px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <span className="eyebrow" style={{ letterSpacing: '.08em' }}>what we cover</span>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {LANDING_CATS.map(t => <span key={t} style={{ padding: '8px 14px', borderRadius: 50, background: 'var(--rule)', font: '600 13px/1 var(--font)', color: 'var(--ink)' }}>{t}</span>)}
+          {LANDING_CATS.map(t => <span key={t} style={{ padding: '8px 14px', borderRadius: 50, border: '1px solid var(--line-soft)', font: '600 13px/1 var(--font)', color: 'var(--ink)' }}>{t}</span>)}
         </div>
       </div>
       <div style={{ padding: '48px 20px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {FEATURES.map(f => (
           <div key={f.n} className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <span style={{ font: '600 11px/1 var(--font)', color: 'var(--gray)', letterSpacing: '.06em' }}>{f.n}</span>
-            <h3 style={{ margin: 0, font: '700 20px/1.25 var(--font)', letterSpacing: '-0.03em' }}>{f.t}</h3>
+            <h3 style={{ margin: 0, font: '800 20px/1.25 var(--font)', letterSpacing: '-0.035em' }}>{f.t}</h3>
             <p style={{ margin: 0, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>{f.d}</p>
           </div>
         ))}
@@ -74,7 +85,7 @@ export function Landing() {
 export function Stat({ v, l }: { v: string | number; l: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ font: '600 18px/1 var(--font)' }}>{v}</span>
+      <span style={{ font: '800 22px/1 var(--font)', letterSpacing: '-0.03em' }}>{v}</span>
       <span style={{ font: '400 11px/1 var(--font)', color: 'var(--gray)' }}>{l}</span>
     </div>
   );

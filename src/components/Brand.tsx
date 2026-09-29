@@ -1,14 +1,14 @@
 import type { CSSProperties } from 'react';
 
 /** The primary wordmark: Rethink Sans italic 400 "The" over Rethink Sans 800 "News". */
-export function Wordmark({ size = 'md', inverse, style }: { size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; inverse?: boolean; style?: CSSProperties }) {
+export function Wordmark({ size = 'md', inverse, white, style }: { size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; inverse?: boolean; white?: boolean; style?: CSSProperties }) {
   const s = {
     xs: [10, 18, -1], sm: [12, 20, -1], md: [16, 28, -2], lg: [20, 36, -2], xl: [28, 56, -2],
   }[size];
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1, ...style }} aria-label="The News" role="img">
-      <span style={{ font: `italic 400 ${s[0]}px/1 var(--font)`, color: inverse ? '#8E8E93' : 'var(--gray)' }}>The</span>
-      <span style={{ font: `800 ${s[1]}px/1 var(--font)`, letterSpacing: s[2], color: inverse ? '#FAFAF8' : 'var(--ink)' }}>News</span>
+      <span style={{ font: `italic 400 ${s[0]}px/1 var(--font)`, color: white ? 'rgba(255,255,255,.86)' : inverse ? '#8E8E93' : 'var(--gray)' }}>The</span>
+      <span style={{ font: `800 ${s[1]}px/1 var(--font)`, letterSpacing: s[2], color: white ? '#FFFFFF' : inverse ? '#FAFAF8' : 'var(--ink)' }}>News</span>
     </div>
   );
 }

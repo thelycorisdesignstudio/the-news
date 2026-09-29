@@ -169,7 +169,7 @@ export function SignUp() {
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
           <input type="checkbox" className="sr-only" checked={f.terms} onChange={e => set('terms', e.target.checked)} />
           <span style={{ flex: 'none', width: 20, height: 20, borderRadius: 6, background: f.terms ? 'var(--signal)' : 'var(--card)', border: f.terms ? 0 : '1.5px solid var(--rule-3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {f.terms && <Icon name="tick" size={13} color="#FFFFFF" />}
+            {f.terms && <Icon name="tick" size={13} color="var(--on-signal)" />}
           </span>
           <span style={{ font: '400 13px/1.4 var(--font)', color: 'var(--ink)' }}>
             I agree to the <Link to="/terms" style={{ color: 'var(--ink)', textDecoration: 'underline' }}>Terms</Link> and <Link to="/privacy" style={{ color: 'var(--ink)', textDecoration: 'underline' }}>Privacy Policy</Link>
@@ -259,7 +259,7 @@ export function Verify() {
           {Array.from({ length: 6 }, (_, i) => {
             const active = focused && !busy && i === Math.min(code.length, 5) && code.length < 6;
             return (
-              <div key={i} style={{ height: 60, borderRadius: 12, background: 'var(--card)', border: active ? '1.5px solid var(--signal)' : error ? '1px solid var(--alert)' : '1px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 24px/1 var(--font)' }}>
+              <div key={i} style={{ height: 60, borderRadius: 12, background: 'var(--card)', border: active ? '1.5px solid var(--signal)' : error ? '1px solid var(--alert)' : '1px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 24px/1 var(--font)' }}>
                 {code[i] ?? (active ? <span style={{ width: 1.5, height: 24, background: 'var(--signal)', animation: 'tnPulse 1s steps(1) infinite' }} /> : '')}
               </div>
             );

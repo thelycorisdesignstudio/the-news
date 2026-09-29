@@ -4,7 +4,6 @@ import { COUNTRIES, COVERAGE, POPULAR_COUNTRIES, RADII, TOPICS, countryName, fil
 import { Wordmark } from '../components/Brand';
 import { Icon, type IconName } from '../components/Icon';
 import { BackButton, B, Button, Check, Footer, LoaderBar, Segmented, Shimmer, StateMessage, StepHeader, T, Title, useStagger } from '../components/ui';
-import { GlassBg } from '../components/Glass';
 import { api } from '../lib/api';
 import { currentPosition, enableNotifications } from '../lib/device';
 import { useStore } from '../lib/store';
@@ -49,7 +48,7 @@ export function Topics({ edit }: { edit?: boolean }) {
     <div className="screen">
       {edit ? <BackButton /> : <StepHeader step={1} onSkip={() => nav(STEPS[1])} onNext={done} nextEnabled={ready} />}
       <div className="rise" style={{ position: 'absolute', top: T(128), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
-        <h2 style={{ margin: 0, font: '700 28px/1.25 var(--font)', letterSpacing: '-0.03em' }}>what do you follow?</h2>
+        <h2 style={{ margin: 0, font: '800 28px/1.25 var(--font)', letterSpacing: '-0.035em' }}>what do you follow?</h2>
         <p style={{ margin: '8px 0 0', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>pick at least three. you can change this anytime.</p>
       </div>
       <div className="no-scrollbar" style={{ position: 'absolute', top: T(232), left: 20, right: 20, bottom: B(120), overflowY: 'auto' }}>
@@ -57,8 +56,8 @@ export function Topics({ edit }: { edit?: boolean }) {
           {TOPICS.map(t => {
             const on = sel.includes(t);
             return (
-              <button key={t} className={`chip lg${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => toggle(t)}>
-                <GlassBg />{on && <Icon name="tick" size={12} color="var(--signal)" style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
+              <button key={t} className={`chip${on ? ' is-on' : ''}`} aria-pressed={on} onClick={() => toggle(t)}>
+                {on && <Icon name="tick" size={12} style={{ animation: 'tnPop 200ms ease-out both' }} />}{t}
               </button>
             );
           })}
@@ -153,7 +152,7 @@ export function Countries() {
       {/* One flowing column so a two-line title on narrow phones pushes the search down instead of under it. */}
       <div style={{ position: 'absolute', top: T(108), left: 0, right: 0, bottom: B(120), display: 'flex', flexDirection: 'column' }}>
         <div className="rise" style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8, flex: 'none' }}>
-          <h2 style={{ margin: 0, font: '700 28px/1.15 var(--font)', letterSpacing: '-0.03em', color: 'var(--ink)' }}>where do you read from?</h2>
+          <h2 style={{ margin: 0, font: '800 28px/1.15 var(--font)', letterSpacing: '-0.035em', color: 'var(--ink)' }}>where do you read from?</h2>
           <p style={{ margin: 0, font: '400 14px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>pick your home country, then any others you follow.</p>
         </div>
         <div style={{ margin: '19px 20px 0', display: 'flex', flexDirection: 'column', gap: 12, flex: 'none' }}>
@@ -162,16 +161,15 @@ export function Countries() {
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="search countries" aria-label="search countries" autoComplete="off" />
             {q && <button className="link-btn" aria-label="clear search" onClick={() => setQ('')} style={{ display: 'flex' }}><Icon name="cancel-circle" size={18} color="var(--gray-2)" /></button>}
           </div>
-          <button className="link-btn lg" onClick={locate} disabled={busy} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px 10px 12px', borderRadius: 50 }}>
-            <GlassBg />
-            <Icon name={busy ? 'loading' : 'gps'} spin={busy} size={18} color="var(--signal)" />
-            <span style={{ font: '600 14px/1 var(--font)', color: 'var(--signal)' }}>{busy ? 'finding you…' : 'use my current location'}</span>
+          <button className="ctl" onClick={locate} disabled={busy} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px 10px 12px', borderRadius: 50 }}>
+            <Icon name={busy ? 'loading' : 'gps'} spin={busy} size={18} />
+            <span style={{ font: '600 14px/1 var(--font)' }}>{busy ? 'finding you…' : 'use my current location'}</span>
           </button>
           <div className="no-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', minHeight: 28 }}>
             {sel.map((code, i) => (
-              <button key={code} onClick={() => toggle(code)} aria-label={`remove ${countryName(code)}`} className="lg lg-soft"
-                style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 7px 12px', borderRadius: 50, background: 'transparent', border: '.5px solid var(--signal)', font: '600 13px/1 var(--font)', color: 'var(--signal)', cursor: 'pointer' }}>
-                <GlassBg />{countryName(code)}{i === 0 ? ' · home' : ''}<Icon name="cancel" size={13} color="var(--signal)" />
+              <button key={code} onClick={() => toggle(code)} aria-label={`remove ${countryName(code)}`} className="ctl ctl-on"
+                style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 7px 12px', borderRadius: 50, font: '600 13px/1 var(--font)' }}>
+                {countryName(code)}{i === 0 ? ' · home' : ''}<Icon name="cancel" size={13} />
               </button>
             ))}
           </div>
@@ -218,14 +216,13 @@ export function Coverage() {
         {COVERAGE.map(c => {
           const on = cov.includes(c.k);
           return (
-            <button className={`lg lg-card${on ? ' lg-soft' : ''}`} key={c.k} role="checkbox" aria-checked={on} onClick={() => toggle(c.k)}
-              style={{ flex: 'none', height: 64, padding: '0 16px', borderRadius: 12, background: 'transparent', border: `1px solid ${on ? 'var(--signal)' : 'transparent'}`, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left', animation: on ? 'tnBounce 200ms ease-out' : undefined }}>
-              <GlassBg />
-              <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', background: on ? 'var(--card)' : 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon name={COVERAGE_ICON[c.icon]} size={18} color={on ? 'var(--signal)' : 'var(--ink)'} />
+            <button className={`ctl ctl-card${on ? ' ctl-soft' : ''}`} key={c.k} role="checkbox" aria-checked={on} onClick={() => toggle(c.k)}
+              style={{ flex: 'none', height: 66, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', animation: on ? 'tnBounce 200ms ease-out' : undefined }}>
+              <span style={{ flex: 'none', width: 38, height: 38, borderRadius: '50%', border: '1px solid var(--line-soft)', background: on ? 'var(--signal)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 160ms' }}>
+                <Icon name={COVERAGE_ICON[c.icon]} size={18} color={on ? 'var(--on-signal)' : 'var(--ink)'} />
               </span>
               <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <span style={{ font: '600 15px/1 var(--font)', color: 'var(--ink)' }}>{c.t}</span>
+                <span style={{ font: '700 15px/1 var(--font)', color: 'var(--ink)' }}>{c.t}</span>
                 <span style={{ font: '400 12px/1.2 var(--font)', color: 'var(--gray)' }}>{desc(c.k, c.d)}</span>
               </span>
               <Check on={on} />
@@ -307,16 +304,16 @@ export function Pace({ edit }: { edit?: boolean }) {
     <div className="screen">
       {edit ? <BackButton to="/profile" /> : <StepHeader step={4} onSkip={next} onNext={next} nextEnabled={result != null} />}
       <div className="rise" style={{ position: 'absolute', top: T(112), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
-        <h2 style={{ margin: 0, font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>let's find your pace.</h2>
+        <h2 style={{ margin: 0, font: '800 24px/1.25 var(--font)', letterSpacing: '-0.035em' }}>let's find your pace.</h2>
         <p style={{ margin: '8px 0 0', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>read this the way you normally would.</p>
       </div>
       <div className="card no-scrollbar rise" style={{ animationDelay: '140ms', position: 'absolute', top: T(196), left: 20, right: 20, maxHeight: `calc(100% - ${T(196)} - var(--sb) - 116px)`, overflowY: 'auto', padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <div style={{ alignSelf: 'stretch', height: 2.5, borderRadius: 2, background: 'var(--rule)', overflow: 'hidden', flex: 'none' }}>
+        <div style={{ alignSelf: 'stretch', height: 2, borderRadius: 1, background: 'var(--rule-2)', overflow: 'hidden', flex: 'none' }}>
           <div style={{ height: '100%', width: `${Math.min(100, ms / 90)}%`, background: 'var(--signal)', transition: 'width 100ms linear' }} />
         </div>
         <span className="pill-cat" style={{ marginTop: 20 }}>{PACE_STORY.cat}</span>
-        <h3 style={{ margin: '16px 0 0', font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em', color: 'var(--headline)', textWrap: 'pretty' }}>{PACE_STORY.title}</h3>
-        <div style={{ width: 40, height: 1, background: 'var(--rule)', margin: '16px 0', flex: 'none' }} />
+        <h3 style={{ margin: '16px 0 0', font: '800 24px/1.25 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'pretty' }}>{PACE_STORY.title}</h3>
+        <div style={{ width: 36, height: 2, borderRadius: 1, background: 'var(--ink)', margin: '16px 0', flex: 'none' }} />
         <p style={{ margin: 0, font: '400 15px/1.7 var(--font)', color: 'var(--body)' }}>{PACE_STORY.summary}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
           <div style={{ width: 20, height: 20, borderRadius: 5, background: 'var(--rule)' }} />
@@ -372,11 +369,11 @@ export function Notifications() {
     <div className="screen">
       <StepHeader step={5} onSkip={finish} hideNext />
       <div className="rise" style={{ position: 'absolute', top: T(176), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
-        <h2 style={{ margin: 0, font: '700 24px/1.25 var(--font)', letterSpacing: '-0.03em' }}>one story a day, right on time.</h2>
+        <h2 style={{ margin: 0, font: '800 24px/1.25 var(--font)', letterSpacing: '-0.035em' }}>one story a day, right on time.</h2>
         <p style={{ margin: '8px 0 0', maxWidth: 280, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>we'll send your most important story once daily. nothing else.</p>
       </div>
       <div className="rise" style={{ position: 'absolute', top: T(320), left: 16, right: 16, animationDelay: '200ms' }} aria-hidden>
-        <div className="frost" style={{ position: 'absolute', left: 14, right: 14, top: 16, height: 80, borderRadius: 12, background: 'var(--card)', boxShadow: '0 0 0 1px var(--rule)', opacity: 0.6 }} />
+        <div style={{ position: 'absolute', left: 14, right: 14, top: 16, height: 80, borderRadius: 12, background: 'var(--card)', boxShadow: '0 0 0 1px var(--rule-2)', opacity: 0.6 }} />
         <div className="on-paper" style={{ position: 'relative', padding: '12px 14px', borderRadius: 12, background: 'var(--card)', boxShadow: '0 12px 32px rgba(10,10,10,.08), 0 0 0 1px var(--rule)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{ flex: 'none', width: 38, height: 38, borderRadius: 9, background: 'var(--surface)', border: '1px solid var(--rule)', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: 5, lineHeight: 1 }}>
             <span style={{ font: 'italic 400 10px/1 var(--font)', color: 'var(--gray)' }}>The</span>
@@ -421,7 +418,7 @@ export function FindingLocal() {
         <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--signal-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Icon name="radar" size={28} color="var(--signal)" style={{ animation: 'tnPulse 1.2s linear infinite' }} />
         </div>
-        <h3 style={{ margin: '8px 0 0', font: '700 24px/1.2 var(--font)', letterSpacing: '-0.03em' }}>finding stories near {home?.area ?? 'you'}.</h3>
+        <h3 style={{ margin: '8px 0 0', font: '800 24px/1.2 var(--font)', letterSpacing: '-0.035em' }}>finding stories near {home?.area ?? 'you'}.</h3>
         <p style={{ margin: 0, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>checking local sources within {home?.radiusKm ?? prefs.radiusKm} km.</p>
         <LoaderBar width={120} />
       </div>
