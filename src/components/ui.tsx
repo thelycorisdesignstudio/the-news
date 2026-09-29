@@ -255,13 +255,13 @@ export function EditorialMark() {
   );
 }
 
-/** App-wide toast, shown under the status bar. */
+/** App-wide toast, floating above the bottom actions: never over a title. */
 export function GlobalToast() {
   const { toast } = useStore();
   if (!toast) return null;
   return (
-    // Confirmations sit up top like the design's; a toast with an action (undo) sits at the bottom, in thumb reach and clear of titles.
-    <div key={toast.id} role="status" className="toast" style={{ position: 'absolute', ...(toast.action ? { bottom: B(64), padding: '12px 16px', fontSize: 13 } : { top: T(112) }), left: '50%', transform: 'translateX(-50%)', zIndex: 60, animation: 'tnFade 150ms ease-out', display: 'flex', alignItems: 'center', gap: 14 }}>
+    // Confirmations float clear of the footer buttons; a toast with an action (undo) sits lower, in thumb reach.
+    <div key={toast.id} role="status" className="toast" style={{ position: 'absolute', ...(toast.action ? { bottom: B(64), padding: '12px 16px', fontSize: 13 } : { bottom: B(150) }), left: '50%', transform: 'translateX(-50%)', zIndex: 60, animation: 'tnFade 150ms ease-out', display: 'flex', alignItems: 'center', gap: 14 }}>
       {toast.text}
       {toast.action && <button className="link-btn" onClick={toast.action.run} style={{ font: '600 12px/1 var(--font)', color: 'inherit', textDecoration: 'underline' }}>{toast.action.label}</button>}
     </div>

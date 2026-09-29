@@ -81,12 +81,12 @@ export function Places() {
       <div className={`no-scrollbar ${stagger}`} style={{ position: 'absolute', top: T(212), left: 20, right: 20, bottom: 'calc(var(--sb) + 130px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {prefs.places.map(p => (
           <button key={p.id} className="card row-btn" onClick={() => nav(`/places/${p.id}`)} style={{ flex: 'none', padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={KIND_ICON[p.kind]} size={18} /></span>
+            <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', border: '1px solid var(--line-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={KIND_ICON[p.kind]} size={18} /></span>
             <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ font: '600 15px/1 var(--font)', color: 'var(--ink)' }}>{p.label}</span>
               <span style={{ font: '400 13px/1.2 var(--font)', color: 'var(--gray)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{placeName(p)}</span>
             </span>
-            <span style={{ padding: '6px 10px', borderRadius: 50, background: 'var(--rule)', font: '600 12px/1 var(--font)', color: 'var(--ink)' }}>{p.radiusKm} km</span>
+            <span style={{ padding: '6px 10px', borderRadius: 50, border: '1px solid var(--line-soft)', font: '700 12px/1 var(--font)', color: 'var(--ink)' }}>{p.radiusKm} km</span>
             <Icon name="arrow-right" size={18} color="var(--gray-2)" />
           </button>
         ))}
@@ -230,7 +230,7 @@ export function AddPlace() {
             const i = r.area.toLowerCase().indexOf(n.toLowerCase());
             return (
               <button key={`${r.area}-${r.city}-${r.lat}`} className="row-btn" onClick={() => pick(r)} style={{ minHeight: 64, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '.5px solid var(--rule)', flex: 'none' }}>
-                <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={r.area === r.city ? 'city' : 'location'} size={18} /></span>
+                <span style={{ flex: 'none', width: 36, height: 36, borderRadius: '50%', border: '1px solid var(--line-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={r.area === r.city ? 'city' : 'location'} size={18} /></span>
                 <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <span style={{ font: '400 15px/1.2 var(--font)', color: 'var(--ink)' }}>
                     {i >= 0 ? <>{r.area.slice(0, i)}<b style={{ fontWeight: 700 }}>{r.area.slice(i, i + n.length)}</b>{r.area.slice(i + n.length)}</> : r.area}

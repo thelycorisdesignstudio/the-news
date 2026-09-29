@@ -64,8 +64,8 @@ export function Landing() {
         ))}
       </div>
       <div style={{ margin: '48px 20px 0', padding: '20px 0', borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)', display: 'grid', gridTemplateColumns: '1fr 1px 1fr 1px 1fr', alignItems: 'center', textAlign: 'center' }}>
-        <Stat v="9s" l="per story" /><div style={{ height: 32, background: 'var(--rule)' }} />
-        <Stat v="8" l="stories a day" /><div style={{ height: 32, background: 'var(--rule)' }} />
+        <Stat v="9s" l="per story" /><div style={{ height: 32, background: 'var(--rule-2)' }} />
+        <Stat v="8" l="stories a day" /><div style={{ height: 32, background: 'var(--rule-2)' }} />
         <Stat v="14" l="topics" />
       </div>
       <footer style={{ padding: '48px 24px 16px', paddingBottom: 'calc(var(--sb) + 22px)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>

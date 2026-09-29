@@ -109,7 +109,7 @@ export function Feed({ filtersOpen }: { filtersOpen?: boolean }) {
     <div className="screen">
       {body}
       {staleText && (
-        <div role="status" className="toast" style={{ position: 'absolute', top: T(108), left: '50%', transform: 'translateX(-50%)', zIndex: 6, display: 'flex', alignItems: 'center', gap: 6, animation: 'tnFade 150ms ease-out' }}>
+        <div role="status" className="toast" style={{ position: 'absolute', bottom: 'max(calc(var(--sb) - 8px), 6px)', left: '50%', transform: 'translateX(-50%)', zIndex: 6, padding: '7px 12px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 6, animation: 'tnFade 150ms ease-out' }}>
           <Icon name="wifi-off" size={14} color="var(--toast-fg)" />{staleText}
         </div>
       )}
@@ -281,9 +281,9 @@ function CaughtUp({ segments, count, saved, onTop }: { segments: number; count: 
         <p style={{ margin: '8px 0 0', maxWidth: 260, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>that's everything for today. nine seconds at a time.</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginTop: 32 }}>
           <Stat v={count} l="stories" />
-          <div style={{ width: 1, height: 32, background: 'var(--rule)' }} />
+          <div style={{ width: 1, height: 32, background: 'var(--rule-2)' }} />
           <Stat v={count * STORY_SECONDS} l="seconds" />
-          <div style={{ width: 1, height: 32, background: 'var(--rule)' }} />
+          <div style={{ width: 1, height: 32, background: 'var(--rule-2)' }} />
           <Stat v={saved} l="saved" />
         </div>
         <Button onClick={onTop} style={{ marginTop: 36, width: 220 }}>back to top</Button>
@@ -310,18 +310,18 @@ function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: nu
   return (
     <>
       <FeedNav {...nav} view="list" showFilter={false} top={62} />
-      <div role="search" style={{ position: 'absolute', top: T(106), left: 20, right: 20 }}>
+      <div role="search" style={{ position: 'absolute', top: T(114), left: 20, right: 20 }}>
         <div className="field" style={{ height: 46, borderRadius: 50 }}>
           <Icon name="search" size={18} color="var(--gray-2)" />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="search today's stories" aria-label="search today's stories" type="search" enterKeyHint="search" autoComplete="off" />
           {q && <button className="link-btn" aria-label="clear search" onClick={() => setQ('')} style={{ display: 'flex' }}><Icon name="cancel-circle" size={18} color="var(--gray-2)" /></button>}
         </div>
       </div>
-      <div className="no-scrollbar" role="tablist" style={{ position: 'absolute', top: T(162), left: 0, right: 0, display: 'flex', gap: 8, padding: '0 20px', overflowX: 'auto' }}>
+      <div className="no-scrollbar" role="tablist" style={{ position: 'absolute', top: T(172), left: 0, right: 0, display: 'flex', gap: 8, padding: '0 20px', overflowX: 'auto' }}>
         <button role="tab" aria-selected={!cat} className={`ctl${!cat ? ' ctl-on' : ''}`} style={chip} onClick={() => setCat(null)}>All</button>
         {cats.map(c => <button key={c} role="tab" aria-selected={cat === c} className={`ctl${cat === c ? ' ctl-on' : ''}`} style={chip} onClick={() => setCat(c)}>{c}</button>)}
       </div>
-      <div className="no-scrollbar content-in" style={{ position: 'absolute', top: T(210), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="no-scrollbar content-in" style={{ position: 'absolute', top: T(222), left: 0, right: 0, bottom: 0, overflowY: 'auto', padding: '0 16px', paddingBottom: 'calc(var(--sb) + 16px)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {!rows.length && (
           <div role="status" style={{ padding: '48px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <span style={{ font: '800 22px/1.2 var(--font)', letterSpacing: '-0.035em' }}>{q ? `nothing matches "${q.trim()}".` : 'nothing here yet.'}</span>
@@ -332,8 +332,8 @@ function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: nu
         {rows.map(({ s, prog }) => (
           <button key={s.id} onClick={() => onRead(s)} className="card row-btn" style={{ flex: 'none', padding: 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              {s.type === 'breaking' && <span style={{ padding: '4px 8px', borderRadius: 50, border: '1px solid var(--alert)', background: 'var(--alert)', color: '#FFFFFF', font: '700 10px/1.2 var(--font)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Breaking</span>}
               <span className="pill-cat" style={{ padding: '4px 8px', fontSize: 10 }}>{s.cat}</span>
-              {s.type === 'breaking' && <span style={{ padding: '4px 8px', borderRadius: 50, background: 'var(--alert)', color: '#FFFFFF', font: '700 10px/1.2 var(--font)', letterSpacing: '.12em', textTransform: 'uppercase' }}>Breaking</span>}
               {locationTag(s) && <span style={{ font: '500 11px/1 var(--font)', color: 'var(--gray)' }}>{locationTag(s)}</span>}
             </div>
             <h4 style={{ margin: 0, font: '800 20px/1.2 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h4>
@@ -353,14 +353,14 @@ function ListView({ stories, track, nav, onRead }: { stories: Story[]; track: nu
 function ListSkeleton() {
   return (
     <div aria-busy="true" aria-label="loading stories">
-      <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', top: T(62), left: 20, right: 20, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Wordmark size="xs" />
       </div>
-      <div style={{ position: 'absolute', top: T(106), left: 20, right: 20 }}><Shimmer w="100%" h={44} r={22} /></div>
-      <div style={{ position: 'absolute', top: T(162), left: 20, right: 20, display: 'flex', gap: 8 }}>
+      <div style={{ position: 'absolute', top: T(114), left: 20, right: 20 }}><Shimmer w="100%" h={44} r={22} /></div>
+      <div style={{ position: 'absolute', top: T(172), left: 20, right: 20, display: 'flex', gap: 8 }}>
         <Shimmer w={48} h={30} /><Shimmer w={90} h={30} /><Shimmer w={80} h={30} /><Shimmer w={70} h={30} />
       </div>
-      <div style={{ position: 'absolute', top: T(210), left: 16, right: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ position: 'absolute', top: T(222), left: 16, right: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {[0, 1, 2, 3].map(i => (
           <div key={i} className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Shimmer w={72} h={18} /><Shimmer w="100%" h={20} /><Shimmer w="70%" h={20} />

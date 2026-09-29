@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { headlineSize, locationTag, timeAgo, type Story } from '../../shared/domain';
 import { Icon } from './Icon';
 import { Wordmark } from './Brand';
@@ -40,9 +40,9 @@ export function ProgressTrack({ track }: { track: number[] }) {
 }
 
 export function FeedNav({ onProfile, onFilter, onView, filtersActive, view = 'swipe', showFilter = true, top = 68 }: NavHandlers & { view?: View; showFilter?: boolean; top?: number }) {
-  const round = { width: 36, height: 36 } as const;
+  const round = { width: 40, height: 40 } as const;
   return (
-    <div style={{ position: 'absolute', top: T(top), left: 16, right: 16, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
+    <div style={{ position: 'absolute', top: T(top), left: 16, right: 16, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 4 }}>
       <button aria-label="profile" className="ctl ctl-icon" onClick={onProfile} style={round}><Icon name="user" size={17} /></button>
       <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}><Wordmark size="xs" /></div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -55,7 +55,7 @@ export function FeedNav({ onProfile, onFilter, onView, filtersActive, view = 'sw
         <div role="radiogroup" aria-label="feed view" style={{ display: 'flex', padding: 2, borderRadius: 50, border: '1px solid var(--line-soft)', background: 'color-mix(in srgb, var(--card) 62%, transparent)' }}>
           {(['swipe', 'list'] as const).map(v => (
             <button key={v} role="radio" aria-checked={view === v} aria-label={v === 'swipe' ? 'swipe view' : 'list view'} onClick={() => onView?.(v)}
-              style={{ width: 32, height: 30, padding: 0, border: 0, borderRadius: 50, background: view === v ? 'var(--signal)' : 'transparent', transition: 'background 180ms', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              style={{ width: 34, height: 34, padding: 0, border: 0, borderRadius: 50, background: view === v ? 'var(--signal)' : 'transparent', transition: 'background 180ms', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <Icon name={v === 'swipe' ? 'layers' : 'list'} size={15} color={view === v ? 'var(--on-signal)' : 'var(--gray)'} />
             </button>
           ))}
@@ -66,7 +66,31 @@ export function FeedNav({ onProfile, onFilter, onView, filtersActive, view = 'sw
 }
 
 /** Where the story card sits: under the nav, above the home indicator. */
-const CARD = { top: T(116), bottom: B(58), left: 14, right: 14 } as const;
+const CARD = { top: T(120), bottom: B(58), left: 14, right: 14 } as const;
+
+/**
+ * Clamps a paragraph to the whole lines that fit its slot, so a long summary ends on a full line with an
+ * ellipsis instead of being sliced through the middle of a line.
+ */
+function useFitLines(key: unknown) {
+  const slot = useRef<HTMLDivElement>(null);
+  const [lines, setLines] = useState<number>();
+  useLayoutEffect(() => {
+    const el = slot.current;
+    if (!el) return;
+    const fit = () => {
+      const p = el.firstElementChild as HTMLElement | null;
+      if (!p) return;
+      const lh = parseFloat(getComputedStyle(p).lineHeight);
+      if (lh > 0) setLines(Math.max(1, Math.floor((el.clientHeight + 1) / lh)));
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [key]);
+  return { slot, lines };
+}
 
 const DOTS = [[28, 10], [19, -6], [1, -6], [-8, 10], [1, 26], [19, 26]];
 
@@ -90,6 +114,7 @@ export interface FeedCardProps extends NavHandlers {
 export function FeedCard(p: FeedCardProps) {
   const s = p.story;
   const loc = locationTag(s);
+  const { slot, lines } = useFitLines(s.id);
   return (
     <article aria-label={s.title} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
       <ProgressTrack track={p.track} />
@@ -110,10 +135,12 @@ export function FeedCard(p: FeedCardProps) {
               </span>
             )}
           </div>
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 0 12px' }}>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '30px 0 16px' }}>
             <h2 style={{ margin: 0, fontFamily: 'var(--font)', fontWeight: 800, letterSpacing: '-0.035em', fontSize: `calc(${headlineSize(s.title)}px * var(--ts, 1))`, lineHeight: 1.14, color: 'var(--headline)', textWrap: 'pretty', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 'none' }}>{s.title}</h2>
             <div style={{ width: 36, height: 2, borderRadius: 1, background: 'var(--ink)', margin: '18px 0 14px', flex: 'none' }} />
-            <p style={{ margin: 0, font: '400 calc(16px * var(--ts, 1))/1.6 var(--font)', color: 'var(--body)', textWrap: 'pretty', overflow: 'hidden', minHeight: 0 }}>{s.summary}</p>
+            <div ref={slot} style={{ flex: 1, minHeight: 0 }}>
+              <p style={{ margin: 0, font: '400 calc(16px * var(--ts, 1))/1.6 var(--font)', color: 'var(--body)', textWrap: 'pretty', overflow: 'hidden', display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: lines, visibility: lines ? undefined : 'hidden' }}>{s.summary}</p>
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 'none' }}>
             <div style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--line-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 10px/1 var(--font)', color: 'var(--ink)' }}>{s.source[0]}</div>

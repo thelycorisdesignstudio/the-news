@@ -11,9 +11,10 @@
   --body: #3A3733;
   --gray: #726D66;
   --gray-2: #9A948C;
-  --rule: #E8E4DE;
-  --rule-2: #DCD7CF;
-  --rule-3: #C4BEB5;
+  /* Hairlines are ink at low alpha: they read the same on paper, on cards and over the belt. */
+  --rule: rgba(43, 41, 38, .085);
+  --rule-2: rgba(43, 41, 38, .14);
+  --rule-3: rgba(43, 41, 38, .26);
   --field-disabled: #EFECE7;
   /* "Signal" is the selected/active colour: ink, so a choice reads as filled, not coloured. */
   --signal: #2B2926;
@@ -21,7 +22,8 @@
   --signal-tint: #ECE8E1;
   --on-signal: #FAF8F5;
   --line: #2B2926;
-  --line-soft: #C9C3BA;
+  /* Translucent, so an outline keeps its contrast over the belt's blue and peach as well as over paper. */
+  --line-soft: rgba(43, 41, 38, .24);
   --alert: #E5483B;
   --alert-tint: #FBE6E1;
   --scrim: rgba(30, 28, 25, .32);
@@ -52,16 +54,16 @@
   --body: #D8D4CE;
   --gray: #A29D96;
   --gray-2: #7B766F;
-  --rule: #2A2826;
-  --rule-2: #353230;
-  --rule-3: #4A4643;
+  --rule: rgba(241, 238, 233, .08);
+  --rule-2: rgba(241, 238, 233, .13);
+  --rule-3: rgba(241, 238, 233, .24);
   --field-disabled: #1F1E1C;
   --signal: #F1EEE9;
   --signal-press: #FFFFFF;
   --signal-tint: #2A2826;
   --on-signal: #151413;
   --line: #F1EEE9;
-  --line-soft: #4A4643;
+  --line-soft: rgba(241, 238, 233, .22);
   --alert: #FF6B5B;
   --alert-tint: #3A1D19;
   --scrim: rgba(0, 0, 0, .55);

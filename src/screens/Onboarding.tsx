@@ -47,12 +47,9 @@ export function Topics({ edit }: { edit?: boolean }) {
   return (
     <div className="screen">
       {edit ? <BackButton /> : <StepHeader step={1} onSkip={() => nav(STEPS[1])} onNext={done} nextEnabled={ready} />}
-      <div className="rise" style={{ position: 'absolute', top: T(128), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
-        <h2 style={{ margin: 0, font: '800 28px/1.25 var(--font)', letterSpacing: '-0.035em' }}>what do you follow?</h2>
-        <p style={{ margin: '8px 0 0', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>pick at least three. you can change this anytime.</p>
-      </div>
-      <div className="no-scrollbar" style={{ position: 'absolute', top: T(232), left: 20, right: 20, bottom: B(120), overflowY: 'auto' }}>
-        <div className={stagger} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
+      <Title sub="pick at least three. you can change this anytime.">what do you follow?</Title>
+      <div className="no-scrollbar" style={{ position: 'absolute', top: T(200), left: 20, right: 20, bottom: B(120), overflowY: 'auto', padding: '2px 0 16px' }}>
+        <div className={stagger} style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {TOPICS.map(t => {
             const on = sel.includes(t);
             return (
@@ -80,8 +77,8 @@ export function CountryRow({ code, name, sel, home, onClick, highlight }: { code
   return (
     <button role="checkbox" aria-checked={sel} onClick={onClick} className="row-btn"
       style={{ height: 56, padding: '0 20px', borderBottom: '.5px solid var(--rule)', display: 'flex', alignItems: 'center', gap: 12, flex: 'none' }}>
-      <span style={{ flex: 'none', width: 34, height: 24, borderRadius: 6, background: 'var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 11px/1 var(--font)', color: 'var(--ink)' }}>{code}</span>
-      <span style={{ flex: 1, font: `${highlight ? 400 : 500} 15px/1 var(--font)`, color: 'var(--ink)' }}>{label}</span>
+      <span style={{ flex: 'none', width: 34, height: 24, borderRadius: 6, border: '1px solid var(--line-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '700 11px/1 var(--font)', letterSpacing: '.04em', color: 'var(--ink)' }}>{code}</span>
+      <span style={{ flex: 1, font: `${highlight ? 400 : 600} 15px/1 var(--font)`, color: 'var(--ink)' }}>{label}</span>
       {home && <span style={{ font: '500 12px/1 var(--font)', color: 'var(--gray)' }}>home</span>}
       <Check on={sel} />
     </button>
@@ -152,7 +149,7 @@ export function Countries() {
       {/* One flowing column so a two-line title on narrow phones pushes the search down instead of under it. */}
       <div style={{ position: 'absolute', top: T(108), left: 0, right: 0, bottom: B(120), display: 'flex', flexDirection: 'column' }}>
         <div className="rise" style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 8, flex: 'none' }}>
-          <h2 style={{ margin: 0, font: '800 28px/1.15 var(--font)', letterSpacing: '-0.035em', color: 'var(--ink)' }}>where do you read from?</h2>
+          <h2 style={{ margin: 0, font: '800 30px/1.1 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'balance' }}>where do you read from?</h2>
           <p style={{ margin: 0, font: '400 14px/1.6 var(--font)', color: 'var(--gray)', textWrap: 'pretty' }}>pick your home country, then any others you follow.</p>
         </div>
         <div style={{ margin: '19px 20px 0', display: 'flex', flexDirection: 'column', gap: 12, flex: 'none' }}>
@@ -165,7 +162,8 @@ export function Countries() {
             <Icon name={busy ? 'loading' : 'gps'} spin={busy} size={18} />
             <span style={{ font: '600 14px/1 var(--font)' }}>{busy ? 'finding you…' : 'use my current location'}</span>
           </button>
-          <div className="no-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', minHeight: 28 }}>
+          {/* Chosen countries scroll edge to edge, like a row of cards, instead of stopping short at the margin. */}
+          <div className="no-scrollbar" style={{ display: 'flex', gap: 8, overflowX: 'auto', minHeight: 28, margin: '0 -20px', padding: '0 20px' }}>
             {sel.map((code, i) => (
               <button key={code} onClick={() => toggle(code)} aria-label={`remove ${countryName(code)}`} className="ctl ctl-on"
                 style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 10px 7px 12px', borderRadius: 50, font: '600 13px/1 var(--font)' }}>
@@ -303,10 +301,7 @@ export function Pace({ edit }: { edit?: boolean }) {
   return (
     <div className="screen">
       {edit ? <BackButton to="/profile" /> : <StepHeader step={4} onSkip={next} onNext={next} nextEnabled={result != null} />}
-      <div className="rise" style={{ position: 'absolute', top: T(112), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
-        <h2 style={{ margin: 0, font: '800 24px/1.25 var(--font)', letterSpacing: '-0.035em' }}>let's find your pace.</h2>
-        <p style={{ margin: '8px 0 0', font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>read this the way you normally would.</p>
-      </div>
+      <Title sub="read this the way you normally would.">let's find your pace.</Title>
       <div className="card no-scrollbar rise" style={{ animationDelay: '140ms', position: 'absolute', top: T(196), left: 20, right: 20, maxHeight: `calc(100% - ${T(196)} - var(--sb) - 116px)`, overflowY: 'auto', padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <div style={{ alignSelf: 'stretch', height: 2, borderRadius: 1, background: 'var(--rule-2)', overflow: 'hidden', flex: 'none' }}>
           <div style={{ height: '100%', width: `${Math.min(100, ms / 90)}%`, background: 'var(--signal)', transition: 'width 100ms linear' }} />
@@ -316,8 +311,8 @@ export function Pace({ edit }: { edit?: boolean }) {
         <div style={{ width: 36, height: 2, borderRadius: 1, background: 'var(--ink)', margin: '16px 0', flex: 'none' }} />
         <p style={{ margin: 0, font: '400 15px/1.7 var(--font)', color: 'var(--body)' }}>{PACE_STORY.summary}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
-          <div style={{ width: 20, height: 20, borderRadius: 5, background: 'var(--rule)' }} />
-          <span style={{ font: '500 13px/1 var(--font)' }}>{PACE_STORY.source}</span>
+          <div style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid var(--line-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', font: '800 10px/1 var(--font)' }}>{PACE_STORY.source[0]}</div>
+          <span style={{ font: '700 13px/1 var(--font)' }}>{PACE_STORY.source}</span>
           <span style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--gray)' }} />
           <span style={{ font: '400 12px/1 var(--font)', color: 'var(--gray)' }}>{PACE_STORY.time}</span>
         </div>
@@ -368,11 +363,8 @@ export function Notifications() {
   return (
     <div className="screen">
       <StepHeader step={5} onSkip={finish} hideNext />
-      <div className="rise" style={{ position: 'absolute', top: T(176), left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '0 24px' }}>
-        <h2 style={{ margin: 0, font: '800 24px/1.25 var(--font)', letterSpacing: '-0.035em' }}>one story a day, right on time.</h2>
-        <p style={{ margin: '8px 0 0', maxWidth: 280, font: '400 14px/1.6 var(--font)', color: 'var(--gray)' }}>we'll send your most important story once daily. nothing else.</p>
-      </div>
-      <div className="rise" style={{ position: 'absolute', top: T(320), left: 16, right: 16, animationDelay: '200ms' }} aria-hidden>
+      <Title sub="we'll send your most important story once daily. nothing else.">one story a day, right on time.</Title>
+      <div className="rise" style={{ position: 'absolute', top: T(268), left: 20, right: 20, animationDelay: '200ms' }} aria-hidden>
         <div style={{ position: 'absolute', left: 14, right: 14, top: 16, height: 80, borderRadius: 12, background: 'var(--card)', boxShadow: '0 0 0 1px var(--rule-2)', opacity: 0.6 }} />
         <div className="on-paper" style={{ position: 'relative', padding: '12px 14px', borderRadius: 12, background: 'var(--card)', boxShadow: '0 12px 32px rgba(10,10,10,.08), 0 0 0 1px var(--rule)', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <div style={{ flex: 'none', width: 38, height: 38, borderRadius: 9, background: 'var(--surface)', border: '1px solid var(--rule)', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingLeft: 5, lineHeight: 1 }}>

@@ -80,9 +80,9 @@ export function Profile() {
         </button>
         <div className="card" style={{ margin: '20px 20px 0', padding: '16px 8px', display: 'flex', alignItems: 'center', flex: 'none' }}>
           <Stat v={read >= 200 ? '200+' : read} l="stories read" />
-          <div style={{ width: 1, height: 28, background: 'var(--rule)' }} />
+          <div style={{ width: 1, height: 28, background: 'var(--rule-2)' }} />
           <Stat v={library.saved.length} l="saved" />
-          <div style={{ width: 1, height: 28, background: 'var(--rule)' }} />
+          <div style={{ width: 1, height: 28, background: 'var(--rule-2)' }} />
           <Stat v={days} l="day streak" />
         </div>
 
@@ -216,11 +216,11 @@ function StoryList({ items, onOpen, saved }: { items: { story: Story; at: number
           <button className="row-btn" onClick={() => onOpen(s)} style={{ padding: saved ? '16px 48px 16px 16px' : 16, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
             <span className="pill-cat" style={{ padding: '4px 8px', fontSize: 10 }}>{s.cat}</span>
             <h4 style={{ margin: 0, font: '800 20px/1.25 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)', textWrap: 'pretty' }}>{s.title}</h4>
-            <span style={{ font: '500 12px/1 var(--font)', color: 'var(--ink)' }}>{s.source} <span style={{ color: 'var(--gray)', fontWeight: 400 }}>· {saved ? `saved ${when(at)}` : `read ${when(at)}`}</span></span>
+            <span style={{ font: '700 12px/1 var(--font)', color: 'var(--ink)' }}>{s.source} <span style={{ color: 'var(--gray)', fontWeight: 400 }}>· {saved ? `saved ${when(at)}` : `read ${when(at)}`}</span></span>
           </button>
           {saved && (
-            <button aria-label="remove from saved" className="ctl ctl-icon ctl-soft" onClick={() => toggleSave(s)} style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32 }}>
-              <Icon name="bookmark-check" size={18} color="var(--signal)" />
+            <button aria-label="remove from saved" className="ctl ctl-icon is-save" onClick={() => toggleSave(s)} style={{ position: 'absolute', top: 12, right: 12, width: 34, height: 34 }}>
+              <Icon name="bookmark-check" size={17} />
             </button>
           )}
         </div>
