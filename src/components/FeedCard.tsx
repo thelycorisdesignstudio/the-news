@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { headlineSize, locationTag, timeAgo, type Story } from '../../shared/domain';
 import { Icon } from './Icon';
 import { Wordmark } from './Brand';
@@ -92,18 +92,35 @@ function useFitLines(key: unknown) {
   return { slot, lines };
 }
 
-const DOTS = [[28, 10], [19, -6], [1, -6], [-8, 10], [1, 26], [19, 26]];
+/** Spark directions for the like burst, in degrees. Slightly uneven, so it reads as a burst, not a clock. */
+const SPARKS = [0, 47, 88, 136, 180, 226, 272, 316];
+
+type Motion = 'pop' | 'drop' | 'kick' | 'settle';
+type Fx = Partial<Record<'like' | 'save' | 'share', { m: Motion; n: number }>>;
+
+/** The icon inside a reaction button, replaying its motion each time `fx` changes. */
+function ReactionIcon({ fx, children }: { fx?: { m: Motion; n: number }; children: ReactNode }) {
+  return (
+    <>
+      <span key={fx?.n ?? 0} className={`act__icon${fx ? ` is-${fx.m}` : ''}`}>{children}</span>
+      {fx && fx.m !== 'settle' && <span key={`r${fx.n}`} className="act__ring" aria-hidden />}
+    </>
+  );
+}
 
 export interface FeedCardProps extends NavHandlers {
   story: Story;
-  track: number[];
+  /** The swipe feed draws the progress track and nav once, above the pager; standalone cards draw their own. */
+  track?: number[];
+  /** Whether this is the story on screen: only its belt animates. */
+  current?: boolean;
   liked?: boolean;
   saved?: boolean;
   toast?: string;
   shareTip?: boolean;
   chev?: 'none' | 'pulse' | 'mid';
-  /** Whether the heart burst just happened (animate) or is shown as a still. */
-  burst?: 'anim' | 'frozen' | 'none';
+  /** Goes up by one each time the story is liked (button or double-tap), which plays the heart burst. */
+  likePulse?: number;
   onLike?: () => void;
   onSave?: () => void;
   onShare?: () => void;
@@ -111,16 +128,36 @@ export interface FeedCardProps extends NavHandlers {
   now?: number;
 }
 
-export function FeedCard(p: FeedCardProps) {
+/**
+ * One story. Memoised: the nine-second timer ticks ten times a second, and re-rendering every mounted card on
+ * each tick cost frames mid-swipe. Handlers are compared by presence only; callers pass stable ones.
+ */
+export const FeedCard = memo(FeedCardView, (a, b) => {
+  for (const k of Object.keys({ ...a, ...b }) as (keyof FeedCardProps)[]) {
+    if (typeof a[k] === 'function' || typeof b[k] === 'function') { if (!a[k] !== !b[k]) return false; continue; }
+    if (a[k] !== b[k]) return false;
+  }
+  return true;
+});
+
+function FeedCardView(p: FeedCardProps) {
   const s = p.story;
   const loc = locationTag(s);
   const { slot, lines } = useFitLines(s.id);
+  const [fx, setFx] = useState<Fx>({});
+  const play = (k: keyof Fx, m: Motion) => setFx(f => ({ ...f, [k]: { m, n: (f[k]?.n ?? 0) + 1 } }));
+  // A like from anywhere (the button, a double-tap) bursts the heart; the count only ever goes up.
+  const seenPulse = useRef(p.likePulse ?? 0);
+  useEffect(() => {
+    if ((p.likePulse ?? 0) > seenPulse.current) play('like', 'pop');
+    seenPulse.current = p.likePulse ?? 0;
+  }, [p.likePulse]);
   return (
-    <article aria-label={s.title} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      <ProgressTrack track={p.track} />
-      <FeedNav {...p} />
+    <article aria-label={s.title} className={p.current === false ? 'is-offstage' : undefined} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+      {p.track && <ProgressTrack track={p.track} />}
+      {p.track && <FeedNav {...p} />}
       {p.toast && (
-        <div role="status" className="toast" style={{ position: 'absolute', bottom: `calc(${B(58)} + 78px)`, left: '50%', transform: 'translateX(-50%)', zIndex: 5, animation: 'tnFade 150ms ease-out' }}>{p.toast}</div>
+        <div role="status" className="toast" style={{ position: 'absolute', bottom: `calc(${B(58)} + 112px)`, left: '50%', transform: 'translateX(-50%)', zIndex: 5, animation: 'tnFade 150ms ease-out' }}>{p.toast}</div>
       )}
       <div className="story-card" style={CARD}>
         <div style={{ position: 'absolute', inset: 0, padding: '22px 20px 16px', display: 'flex', flexDirection: 'column' }}>
@@ -153,24 +190,22 @@ export function FeedCard(p: FeedCardProps) {
               read full article<span className="btn__arrow" aria-hidden><Icon name="arrow-right" size={16} /></span>
             </button>
             <div style={{ display: 'flex', gap: 6 }}>
-              <button aria-label={p.liked ? 'unlike' : 'like'} aria-pressed={!!p.liked} onClick={p.onLike} className={`ctl ctl-icon${p.liked ? ' is-like' : ''}`}>
-                <Icon key={p.liked ? 'on' : 'off'} name="favourite" size={19} color={p.liked ? 'var(--alert)' : 'currentColor'} style={p.liked ? { animation: 'tnHeart 300ms ease-out' } : undefined} />
-                {p.liked && p.burst && p.burst !== 'none' && (
-                  <div style={{ position: 'absolute', inset: 8, pointerEvents: 'none' }}>
-                    {DOTS.map(([x, y], i) => (
-                      <span key={i} style={{ position: 'absolute', left: x * 0.85, top: y * 0.85, width: 4, height: 4, borderRadius: '50%', background: 'var(--alert)', ...(p.burst === 'anim' ? { opacity: 0, animation: 'tnBurst 300ms ease-out' } : { opacity: 0.35 }) }} />
-                    ))}
-                  </div>
+              <button aria-label={p.liked ? 'unlike' : 'like'} aria-pressed={!!p.liked} className={`ctl ctl-icon act act-like${p.liked ? ' is-like' : ''}`}
+                onClick={() => { if (p.liked) play('like', 'settle'); p.onLike?.(); }}>
+                <ReactionIcon fx={fx.like}><Icon name="favourite" size={19} /></ReactionIcon>
+                {fx.like?.m === 'pop' && (
+                  <span key={`s${fx.like.n}`} className="act__sparks" aria-hidden>
+                    {SPARKS.map(a => <i key={a} style={{ '--a': `${a}deg` } as CSSProperties} />)}
+                  </span>
                 )}
               </button>
-              <button aria-label="share" onClick={p.onShare} className="ctl ctl-icon">
-                <Icon name="share" size={18} />
+              <button aria-label="share" className="ctl ctl-icon act act-share" onClick={() => { play('share', 'kick'); p.onShare?.(); }}>
+                <ReactionIcon fx={fx.share}><Icon name="share" size={18} /></ReactionIcon>
                 {p.shareTip && <span role="status" className="toast" style={{ position: 'absolute', bottom: 48, right: -4, padding: '6px 10px' }}>copied.</span>}
               </button>
-              <button aria-label={p.saved ? 'remove bookmark' : 'bookmark'} aria-pressed={!!p.saved} onClick={p.onSave} className={`ctl ctl-icon${p.saved ? ' is-save' : ''}`}>
-                {p.saved
-                  ? <Icon key="on" name="bookmark-check" size={19} style={{ animation: 'tnHeart 300ms ease-out' }} />
-                  : <Icon key="off" name="bookmark" size={19} />}
+              <button aria-label={p.saved ? 'remove bookmark' : 'bookmark'} aria-pressed={!!p.saved} className={`ctl ctl-icon act act-save${p.saved ? ' is-save' : ''}`}
+                onClick={() => { play('save', p.saved ? 'settle' : 'drop'); p.onSave?.(); }}>
+                <ReactionIcon fx={fx.save}><Icon name="bookmark" size={19} /></ReactionIcon>
               </button>
             </div>
           </div>
@@ -193,11 +228,11 @@ export function Chevron({ state }: { state: 'none' | 'pulse' | 'mid' | 'loop' })
 }
 
 /** Frame for full-screen states inside the swipe queue (removed story, nothing nearby). */
-export function FeedStateCard({ track, nav, children }: { track: number[]; nav: NavHandlers; children: ReactNode }) {
+export function FeedStateCard({ track, nav, children }: { track?: number[]; nav?: NavHandlers; children: ReactNode }) {
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
-      <ProgressTrack track={track} />
-      <FeedNav {...nav} />
+      {track && <ProgressTrack track={track} />}
+      {nav && <FeedNav {...nav} />}
       {children}
     </div>
   );
@@ -213,7 +248,8 @@ export function FeedSkeleton({ nav, segments = 8 }: { nav: NavHandlers; segments
       <div className="story-card" style={CARD}>
         <div style={{ position: 'absolute', inset: 0, padding: '22px 20px 16px', display: 'flex', flexDirection: 'column' }}>
           <Shimmer w={84} h={22} r={11} />
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          {/* Same top-aligned rhythm as a real card, so nothing jumps when the story arrives. */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '30px 0 16px' }}>
             <Shimmer w="100%" h={30} /><div style={{ height: 8 }} />
             <Shimmer w="94%" h={30} /><div style={{ height: 8 }} />
             <Shimmer w="58%" h={30} />

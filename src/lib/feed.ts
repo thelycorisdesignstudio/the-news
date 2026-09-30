@@ -3,7 +3,8 @@ import type { Filters, Place, Story } from '../../shared/domain';
 import { api, ApiError } from './api';
 import { storage } from './storage';
 
-interface Cached { key: string; stories: Story[]; fetchedAt: number }
+/** `serverAt`: the server's clock at the last fetch, which live merges ask "what's new since". */
+interface Cached { key: string; stories: Story[]; fetchedAt: number; serverAt?: number }
 
 export type FeedStatus = 'loading' | 'ready' | 'error' | 'offline';
 
@@ -25,6 +26,8 @@ export function useFeed(filters: Filters, places: Place[], paused = false, muted
       : { status: 'loading', stories: [], fetchedAt: null, error: null, stale: false };
   });
   const inflight = useRef(0);
+  // Stories that arrived live since the reader last looked: the feed offers a jump to them.
+  const [fresh, setFresh] = useState<string[]>([]);
 
   const load = useCallback(async (opts: { keepQueue?: boolean } = {}) => {
     const id = ++inflight.current;
@@ -35,7 +38,7 @@ export function useFeed(filters: Filters, places: Place[], paused = false, muted
       const res = await api.feed(filters, places, keep);
       if (id !== inflight.current) return;
       const fetchedAt = Date.now();
-      storage.set('feed', { key, stories: res.stories, fetchedAt });
+      storage.set('feed', { key, stories: res.stories, fetchedAt, serverAt: res.serverTime });
       setState({ status: 'ready', stories: res.stories, fetchedAt, error: null, stale: false });
     } catch (e) {
       if (id !== inflight.current) return;
@@ -71,15 +74,26 @@ export function useFeed(filters: Filters, places: Place[], paused = false, muted
     try {
       const c = cachedFeed();
       if (!c || c.key !== key) return;
-      const res = await api.feed(filters, places, c.stories.map(s => s.id));
+      if (c.serverAt == null) {
+        // A queue cached before servers reported their clock: take a baseline now, merge from the next event.
+        const { serverTime } = await api.feed(filters, places, c.stories.map(s => s.id));
+        if (serverTime != null) storage.set('feed', { ...c, serverAt: serverTime });
+        return;
+      }
+      const res = await api.feed(filters, places, c.stories.map(s => s.id), c.serverAt);
+      const serverAt = res.serverTime ?? c.serverAt;
       const fresh = new Map(res.stories.map(s => [s.id, s]));
       const have = new Set(c.stories.map(s => s.id));
       const added = res.stories.filter(s => !have.has(s.id) && !s.removed);
-      if (!added.length && !c.stories.some(s => fresh.has(s.id) && JSON.stringify(fresh.get(s.id)) !== JSON.stringify(s))) return;
+      if (!added.length && !c.stories.some(s => fresh.has(s.id) && JSON.stringify(fresh.get(s.id)) !== JSON.stringify(s))) {
+        storage.set('feed', { ...c, serverAt });
+        return;
+      }
       const stories = [...c.stories.map(s => fresh.get(s.id) ?? s), ...added];
       const fetchedAt = Date.now();
-      storage.set('feed', { key, stories, fetchedAt });
+      storage.set('feed', { key, stories, fetchedAt, serverAt });
       setState(st => (st.status === 'ready' ? { ...st, stories, fetchedAt, stale: false, error: null } : st));
+      if (added.length) setFresh(f => [...f, ...added.map(s => s.id)]);
     } catch {
       // A missed live update is harmless: the next refresh brings everything in.
     } finally {
@@ -95,7 +109,12 @@ export function useFeed(filters: Filters, places: Place[], paused = false, muted
     // Bursts of publishes arrive together; one merge covers them.
     const on = () => { window.clearTimeout(t); t = window.setTimeout(() => void merge(), 1500); };
     es.addEventListener('stories', on);
-    return () => { window.clearTimeout(t); es.close(); };
+    // Some networks drop long-lived connections; a quiet check every three minutes while the app is open
+    // means live stories still arrive.
+    const poll = window.setInterval(() => { if (document.visibilityState === 'visible') void merge(); }, 180_000);
+    const back = () => { if (document.visibilityState === 'visible') void merge(); };
+    document.addEventListener('visibilitychange', back);
+    return () => { window.clearTimeout(t); window.clearInterval(poll); document.removeEventListener('visibilitychange', back); es.close(); };
   }, [paused, merge]);
 
   // Coming back online after showing the cached queue: quietly refresh.
@@ -110,5 +129,8 @@ export function useFeed(filters: Filters, places: Place[], paused = false, muted
   const stories = useMemo(() => (muted.length ? state.stories.filter(s => !muted.includes(s.source)) : state.stories),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [state.stories, mutedKey]);
-  return { ...state, stories, refresh: () => load({ keepQueue: false }) };
+  // A new queue (refresh, new filters) has nothing "new" to point at.
+  useEffect(() => { setFresh([]); }, [key]);
+  const ackFresh = useCallback(() => setFresh([]), []);
+  return { ...state, stories, fresh, ackFresh, refresh: () => { setFresh([]); return load({ keepQueue: false }); } };
 }

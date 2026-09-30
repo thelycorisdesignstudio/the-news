@@ -5,7 +5,7 @@ import type { DB } from '../db';
 import { config } from '../config';
 import { HttpError } from '../auth';
 import { removeStory, upsertStories } from '../stories';
-import { agentReachDoctor, ingestPushed, runCycle, sourceHealth } from '../ingest/pipeline';
+import { agentReachDoctor, ingestPushed, newsEvents, runCycle, sourceHealth } from '../ingest/pipeline';
 import { SUMMARY_MAX_WORDS, wordCount } from '../../shared/domain';
 
 const s = z.string().max(4000);
@@ -74,6 +74,8 @@ export function adminRoutes(db: DB) {
   });
   r.delete('/stories/:id', (req, res) => {
     if (!removeStory(db, req.params.id)) throw new HttpError(404, 'story not found.');
+    // Readers with the story queued see it withdrawn now, not at their next refresh.
+    newsEvents.emit('stories', { added: 0, ids: [req.params.id], removed: true, at: new Date().toISOString() });
     res.json({ removed: req.params.id });
   });
   return r;

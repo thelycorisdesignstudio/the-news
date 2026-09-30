@@ -171,7 +171,7 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
     const onWire = recent.find(r => similarity(r.title_key, row.title_key) >= SAME_STORY);
     if (onWire) {
       // Another outlet on a story already published: count it, don't write it twice.
-      corroborate(db, onWire.story_id, now());
+      corroborate(db, onWire.story_id, now(), outletOf(row, byId));
       setStatus.run('merged', onWire.story_id, 'merged', row.attempts, row.url_hash);
       report.merged++;
       continue;
@@ -210,7 +210,7 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
       recent.push({ title_key: row.title_key, story_id: id });
       report.published.push(id);
       for (const f of followers.get(row.url_hash) ?? []) {
-        corroborate(db, id, now());
+        corroborate(db, id, now(), outletOf(f, byId));
         setStatus.run('merged', id, 'merged', f.attempts, f.url_hash);
         report.merged++;
       }
@@ -231,10 +231,24 @@ export async function runCycle(db: DB, deps: IngestDeps = {}): Promise<CycleRepo
 /** Importance 10 → rank 20, importance 1 → rank 92. Editorial and seed stories use the same scale. */
 export const rankFor = (importance: number) => 100 - Math.round(Math.min(10, Math.max(1, importance)) * 8);
 
-/** Another outlet carried the story: move it up, and promote it to breaking when the wire lights up. */
-function corroborate(db: DB, storyId: string, now: number) {
-  const s = db.prepare('SELECT sources, rank, published_at, type FROM stories WHERE id = ?').get(storyId) as { sources: number; rank: number; published_at: string; type: string } | undefined;
+/** The newsroom behind a pending item: the outlet an aggregator names, else the feed's own name. */
+function outletOf(row: PendingRow, byId: Map<string, Source>): string {
+  try { return (JSON.parse(row.payload) as FeedItem).outlet || byId.get(row.source_id)?.name || row.source_id; } catch { return row.source_id; }
+}
+const outletKey = (o: string) => o.toLowerCase().replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, '');
+
+/**
+ * Another newsroom carried the story: move it up, and promote it to breaking when the wire lights up.
+ * The same outlet arriving again (one paper through several Google News desks) doesn't count twice.
+ */
+export function corroborate(db: DB, storyId: string, now: number, outlet: string) {
+  const s = db.prepare('SELECT sources, rank, published_at, type, source, outlets FROM stories WHERE id = ?').get(storyId) as
+    { sources: number; rank: number; published_at: string; type: string; source: string; outlets: string } | undefined;
   if (!s) return;
+  const seen = new Set([outletKey(s.source), ...s.outlets.split('|').filter(Boolean)]);
+  const key = outletKey(outlet);
+  if (!key || seen.has(key)) return;
+  db.prepare('UPDATE stories SET outlets = ? WHERE id = ?').run([...seen].slice(1).concat(key).join('|'), storyId);
   const sources = s.sources + 1;
   const fresh = now - Date.parse(s.published_at) <= BREAKING_WINDOW_MS;
   const type = fresh && sources >= BREAKING_SOURCES && s.type === 'news' ? 'breaking' : s.type;

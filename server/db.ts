@@ -123,6 +123,8 @@ const MIGRATIONS = [
      created_at INTEGER NOT NULL
    );
    CREATE INDEX feedback_client ON feedback(client_hash, created_at);`,
+  // Which outlets have carried a story, so "three sources" means three newsrooms, not one paper on three desks.
+  `ALTER TABLE stories ADD COLUMN outlets TEXT NOT NULL DEFAULT '';`,
 ];
 
 export function openDb(path: string): DB {

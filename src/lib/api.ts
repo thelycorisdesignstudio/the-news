@@ -58,7 +58,8 @@ export const api = {
   updateMe: (b: { name: string }) => call<{ user: User }>('PATCH', '/auth/me', b),
   feedback: (b: { rating?: number | null; message: string; context?: string }) => call<{ ok: true }>('POST', '/feedback', b),
 
-  feed: (filters: Filters, places: Place[], keep: string[] = []) => call<{ stories: Story[]; generatedAt: string }>('POST', '/feed', { filters, places, keep }),
+  feed: (filters: Filters, places: Place[], keep: string[] = [], since?: number) =>
+    call<{ stories: Story[]; generatedAt: string; serverTime?: number }>('POST', '/feed', { filters, places, keep, ...(since != null ? { since } : {}) }),
   feedCount: (filters: Filters, places: Place[]) => call<{ count: number }>('POST', '/feed/count', { filters, places }),
   story: (id: string) => call<{ story: Story }>('GET', `/stories/${encodeURIComponent(id)}`),
 

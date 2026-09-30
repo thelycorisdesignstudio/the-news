@@ -43,6 +43,11 @@ const feedQuery = z.object({
   places: z.array(placeSchema).max(20).default([]),
   /** Story ids already in the reader's queue: removed ones come back as tombstones instead of vanishing. */
   keep: z.array(str).max(200).default([]),
+  /**
+   * Live merge: a server time from an earlier response. Only stories published into the app after it are
+   * added to the kept queue, so "new stories" means new, not "ranked just below yesterday's cut".
+   */
+  since: z.number().int().nonnegative().optional(),
 });
 
 function parse<T>(schema: z.ZodType<T>, body: unknown): T {
@@ -54,16 +59,19 @@ function parse<T>(schema: z.ZodType<T>, body: unknown): T {
 /** A reader's queue never drops below this: when their topics are quiet, the day's top stories fill in. */
 const FEED_MIN = 20;
 
-function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [], max = config.feedMax): Story[] {
+function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [], max = config.feedMax, since?: number): Story[] {
   const keepSet = new Set(keep);
   const out: Story[] = [];
   const all = windowStories(db, config.feedWindowHours);
+  const addedSince = since == null ? null
+    : new Set((db.prepare('SELECT id FROM stories WHERE ingested_at > ?').all(since) as { id: string }[]).map(r => r.id));
   let fresh = 0;
   for (const s of all) {
     if (s.removed) {
       if (keepSet.has(s.id)) out.push({ ...s, summary: '', title: '', removed: true });
       continue;
     }
+    if (addedSince && !keepSet.has(s.id) && !addedSince.has(s.id)) continue;
     const near = s.level === 'hyper' ? nearestPlace(s, places) : null;
     const story = near ? { ...s, distanceKm: Math.round(near.km * 10) / 10 } : s;
     if (!matchesFilters(story, filters, places)) continue;
@@ -74,7 +82,7 @@ function feedFor(db: DB, filters: Filters, places: Place[], keep: string[] = [],
   }
   // Topics narrowed the day to a handful: top it up with the biggest stories elsewhere (same coverage,
   // country and place rules), after the reader's own.
-  if (fresh < FEED_MIN && filters.top.length) {
+  if (!addedSince && fresh < FEED_MIN && filters.top.length) {
     const have = new Set(out.map(s => s.id));
     const wider = { ...filters, top: [] };
     for (const s of all) {
@@ -95,7 +103,7 @@ export function dataRoutes(db: DB) {
   // ---- feed (public: signed-out readers get the same feed from their local preferences) ----
   r.post('/feed', (req, res) => {
     const q = parse(feedQuery, req.body);
-    res.json({ stories: feedFor(db, q.filters, q.places, q.keep), generatedAt: new Date().toISOString() });
+    res.json({ stories: feedFor(db, q.filters, q.places, q.keep, config.feedMax, q.since), generatedAt: new Date().toISOString(), serverTime: Date.now() });
   });
 
   r.post('/feed/count', (req, res) => {

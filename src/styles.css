@@ -376,3 +376,46 @@ input[type="search"] { -webkit-appearance: none; appearance: none; }
 /* Content replacing a skeleton eases in instead of popping. */
 @keyframes tnContentIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .content-in { animation: tnContentIn 320ms cubic-bezier(.2, .8, .2, 1) backwards; }
+
+/* ---------- reactions ----------
+ * Like, share and save each answer a tap in their own way, in the first 100ms, on the compositor:
+ * - like:  the heart springs (squash, overshoot, settle), fills red, and throws a ring and eight sparks
+ * - save:  the bookmark drops in, squashes on landing and fills; the button inks over
+ * - share: the icon kicks up and to the right, then settles, with a quiet ring
+ * Undoing a like or a save gets a small settle, never a celebration.
+ */
+.act { overflow: visible; }
+.act:active:not(:disabled) { transform: scale(.88); transition-duration: 80ms; }
+.act svg path { transition: fill 180ms ease-out, stroke 180ms ease-out; }
+.act-like.is-like svg path { fill: var(--alert); stroke: var(--alert); }
+.act-save.is-save svg path { fill: currentColor; }
+.act__icon { display: flex; will-change: transform; }
+.act__icon.is-pop { animation: tnLikePop 520ms cubic-bezier(.2, .9, .3, 1.2) both; }
+.act__icon.is-drop { animation: tnSaveDrop 480ms cubic-bezier(.2, .9, .3, 1.1) both; }
+.act__icon.is-kick { animation: tnShareKick 460ms cubic-bezier(.2, .9, .3, 1) both; }
+.act__icon.is-settle { animation: tnSettle 260ms ease-out both; }
+@keyframes tnLikePop { 0% { transform: scale(.55); } 38% { transform: scale(1.3); } 62% { transform: scale(.92); } 80% { transform: scale(1.06); } 100% { transform: scale(1); } }
+@keyframes tnSaveDrop { 0% { transform: translateY(-9px) scale(.9); opacity: .4; } 45% { transform: translateY(1px) scaleY(.82) scaleX(1.1); opacity: 1; } 70% { transform: translateY(-1px) scaleY(1.06); } 100% { transform: none; } }
+@keyframes tnShareKick { 0% { transform: none; } 35% { transform: translate(3px, -4px) rotate(-12deg) scale(1.1); } 70% { transform: translate(-1px, 1px) rotate(3deg); } 100% { transform: none; } }
+@keyframes tnSettle { 0% { transform: scale(.82); } 100% { transform: scale(1); } }
+.act__ring { position: absolute; inset: -1px; border-radius: 50%; border: 1.5px solid var(--ring, var(--ink)); pointer-events: none; opacity: 0; animation: tnRing 520ms cubic-bezier(.2, .8, .2, 1) both; }
+.act-like .act__ring { --ring: var(--alert); }
+@keyframes tnRing { 0% { transform: scale(.7); opacity: .9; } 100% { transform: scale(1.75); opacity: 0; } }
+.act__sparks { position: absolute; inset: 0; pointer-events: none; }
+.act__sparks i { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: var(--alert); opacity: 0; animation: tnSpark 560ms cubic-bezier(.15, .7, .3, 1) 40ms both; }
+.act__sparks i:nth-child(even) { width: 3.5px; height: 3.5px; margin: -1.75px 0 0 -1.75px; background: var(--belt-amber); }
+@keyframes tnSpark { 0% { transform: rotate(var(--a)) translateY(0) scale(.4); opacity: 1; } 70% { opacity: 1; } 100% { transform: rotate(var(--a)) translateY(-30px) scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .act__icon, .act__ring, .act__sparks i { animation: none !important; } .act__ring, .act__sparks { display: none; } }
+/* Double-tap: a solid heart springs up where the thumb landed, tilts, rings out and floats away. */
+.tap-heart { position: absolute; width: 112px; height: 112px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 8; color: var(--alert); filter: drop-shadow(0 10px 22px rgba(229, 72, 59, .28)); animation: tnHeartPop 880ms cubic-bezier(.2, .8, .2, 1) forwards; }
+.tap-heart svg path { fill: var(--alert); stroke: var(--alert); }
+.tap-heart svg { transform: rotate(var(--tilt, -10deg)); }
+.tap-heart__ring { position: absolute; inset: 14px; border-radius: 50%; border: 2px solid var(--alert); opacity: 0; animation: tnRing 620ms cubic-bezier(.2, .8, .2, 1) 60ms both; }
+/* Only the story on screen animates its belt; the ones mounted above and below hold still. */
+.is-offstage .story-card::before { animation-play-state: paused; }
+/* Live stories: a pill slides in under the nav and jumps to them. The dot breathes while they wait. */
+.fresh-pill { position: absolute; top: calc(var(--st) + 62px); left: 50%; z-index: 6; display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px 0 11px; border: 0; border-radius: 50px; background: var(--toast-bg); color: var(--toast-fg); font: 700 12px/1 var(--font); letter-spacing: -0.005em; cursor: pointer; box-shadow: 0 8px 24px rgba(30, 28, 25, .18); transform: translateX(-50%); animation: tnFreshIn 420ms cubic-bezier(.2, .9, .3, 1.15) both; }
+.fresh-pill:active { transform: translateX(-50%) scale(.96); }
+.fresh-pill__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--belt-amber); animation: tnBreathe 1.6s ease-in-out infinite; }
+@keyframes tnFreshIn { from { opacity: 0; transform: translate(-50%, -12px) scale(.9); } to { opacity: 1; transform: translateX(-50%); } }
+@keyframes tnBreathe { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.7); } }

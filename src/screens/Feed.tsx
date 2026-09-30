@@ -103,7 +103,7 @@ export function Feed({ filtersOpen }: { filtersOpen?: boolean }) {
   else if (feed.status === 'error') body = <LoadError error={feed.error} onRetry={feed.refresh} />;
   else if (!stories.length) body = <EmptyFeed nav={navHandlers} />;
   else if (view === 'list') body = <ListView stories={stories} track={track} nav={navHandlers} onRead={setReader} />;
-  else body = <SwipeFeed stories={stories} idx={idx} track={track} pct={pct} done={done} goTo={goTo} nav={navHandlers} onRead={setReader} onRefresh={feed.refresh} />;
+  else body = <SwipeFeed stories={stories} idx={idx} track={track} pct={pct} done={done} goTo={goTo} nav={navHandlers} onRead={setReader} onRefresh={feed.refresh} fresh={feed.fresh} onAckFresh={feed.ackFresh} />;
 
   return (
     <div className="screen">
@@ -121,9 +121,9 @@ export function Feed({ filtersOpen }: { filtersOpen?: boolean }) {
 
 /* ---------------- swipe ---------------- */
 
-function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefresh }: {
+function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefresh, fresh = [], onAckFresh }: {
   stories: Story[]; idx: number; track: number[]; pct: number; done: Record<string, boolean>; goTo: (i: number) => void;
-  nav: NavHandlers; onRead: (s: Story) => void; onRefresh: () => Promise<void>;
+  nav: NavHandlers; onRead: (s: Story) => void; onRefresh: () => Promise<void>; fresh?: string[]; onAckFresh?: () => void;
 }) {
   const { isLiked, isSaved, toggleLike, toggleSave, showToast, library } = useStore();
   const ref = useRef<HTMLDivElement>(null);
@@ -137,7 +137,7 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
   }, [atEnd, library.history.length]);
   const [toastFor, setToastFor] = useState<string | null>(null);
   const [tipFor, setTipFor] = useState<string | null>(null);
-  const [burstFor, setBurstFor] = useState<string | null>(null);
+  const [likePulse, setLikePulse] = useState<Record<string, number>>({});
   const [pull, setPull] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const pullStart = useRef<number | null>(null);
@@ -182,7 +182,7 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
     const on = !isLiked(s.id);
     toggleLike(s);
     haptic(on ? 'like' : 'tick');
-    if (on) { setBurstFor(s.id); later(() => setBurstFor(b => (b === s.id ? null : b)), 400); }
+    if (on) setLikePulse(p => ({ ...p, [s.id]: (p[s.id] ?? 0) + 1 }));
   };
   const save = (s: Story) => {
     const on = toggleSave(s);
@@ -203,6 +203,7 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
     later(() => setHearts(h => h.filter(v => v.id !== id)), 900);
   });
   const share = async (s: Story) => {
+    haptic('tick');
     const r = await shareStory(s);
     if (r === 'copied') { setTipFor(s.id); later(() => setTipFor(t => (t === s.id ? null : t)), 1400); }
     if (r === 'failed') showToast("couldn't copy the link.");
@@ -226,14 +227,22 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
     setPull(0);
   };
 
+  // Live stories join the end of the queue; a pill offers to jump to them, and goes once you get there.
+  const firstFresh = fresh.length ? stories.findIndex(s => fresh.includes(s.id)) : -1;
+  useEffect(() => { if (firstFresh >= 0 && idx >= firstFresh) onAckFresh?.(); }, [idx, firstFresh, onAckFresh]);
   const timeUp = !!(stories[idx] && (done[stories[idx].id] || pct >= 100));
   const savedHere = stories.filter(s => isSaved(s.id)).length;
-  const now = Date.now();
+  // "13m ago" moves once a minute, not on every timer tick (that would re-render every mounted card).
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => { const iv = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(iv); }, []);
+  // Cards keep their first handlers (see FeedCard's memo); these always reach the latest state.
+  const act = useRef({ like, save, share, onRead });
+  act.current = { like, save, share, onRead };
 
   return (
     <>
       {pull > 0 && (
-        <div style={{ position: 'absolute', top: T(60), left: 0, right: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} role="status">
+        <div style={{ position: 'absolute', top: T(112), left: 0, right: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} role="status">
           <Icon name="loading" size={18} color="var(--ink)" spin={refreshing} style={{ transform: refreshing ? undefined : `rotate(${pull * 4}deg)` }} />
           <span style={{ font: '500 13px/1 var(--font)', color: 'var(--gray)' }}>{refreshing ? 'checking for new stories' : pull > 56 ? 'release to refresh' : 'pull to refresh'}</span>
         </div>
@@ -243,27 +252,38 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
         {stories.map((s, i) => (
           <div key={s.id} style={{ position: 'relative', height: '100%', scrollSnapAlign: 'start', scrollSnapStop: 'always' }} aria-hidden={i !== idx || undefined}>
             {Math.abs(i - idx) <= 2 && (s.removed ? (
-              <FeedStateCard track={track} nav={nav}>
+              <FeedStateCard>
                 <StateMessage icon="news" title="this story is no longer available." body="the publisher removed it. swipe up for the next one." />
                 <Chevron state="loop" />
               </FeedStateCard>
             ) : (
-              <FeedCard story={s} track={track} now={now} {...nav}
-                liked={isLiked(s.id)} saved={isSaved(s.id)} burst={burstFor === s.id ? 'anim' : 'none'}
+              <FeedCard story={s} now={now} current={i === idx}
+                liked={isLiked(s.id)} saved={isSaved(s.id)} likePulse={likePulse[s.id] ?? 0}
                 toast={toastFor === s.id ? 'saved to reading list' : ''} shareTip={tipFor === s.id}
                 chev={i === idx && timeUp ? 'pulse' : 'none'}
-                onLike={() => like(s)} onSave={() => save(s)} onShare={() => share(s)} onRead={() => onRead(s)} />
+                onLike={() => act.current.like(s)} onSave={() => act.current.save(s)} onShare={() => act.current.share(s)} onRead={() => act.current.onRead(s)} />
             ))}
           </div>
         ))}
         <div style={{ position: 'relative', height: '100%', scrollSnapAlign: 'start' }}>
-          <CaughtUp segments={stories.length} count={stories.filter(s => !s.removed).length} saved={savedHere} onTop={() => scrollToIdx(0)} />
+          <CaughtUp count={stories.filter(s => !s.removed).length} saved={savedHere} onTop={() => scrollToIdx(0)} />
         </div>
       </div>
+      {/* Drawn once above the pager, so they hold still while stories slide underneath. */}
+      <ProgressTrack track={track} />
+      <FeedNav {...nav} />
+      {firstFresh > idx && (
+        <button className="fresh-pill" onClick={() => { haptic('tick'); scrollToIdx(firstFresh); onAckFresh?.(); }}>
+          <span className="fresh-pill__dot" aria-hidden />
+          {fresh.length === 1 ? '1 new story' : `${fresh.length} new stories`}
+          <Icon name="arrow-right" size={14} style={{ transform: 'rotate(90deg)' }} />
+        </button>
+      )}
       {askFeedback && <FeedbackDialog context="caught-up" onClose={() => { markFeedbackAsked(); setAskFeedback(false); }} />}
       {hearts.map(h => (
-        <div key={h.id} aria-hidden style={{ position: 'absolute', left: h.x - 48, top: h.y - 48, width: 96, height: 96, borderRadius: '50%', background: 'color-mix(in srgb, var(--alert-tint) 92%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 8, animation: 'tnHeartPop 850ms cubic-bezier(.2,.8,.2,1) forwards', boxShadow: '0 12px 32px rgba(255,59,59,.18)' }}>
-          <Icon name="favourite" size={52} color="var(--alert)" />
+        <div key={h.id} aria-hidden className="tap-heart" style={{ left: h.x - 56, top: h.y - 56 }}>
+          <Icon name="favourite" size={64} />
+          <span className="tap-heart__ring" />
         </div>
       ))}
     </>
@@ -271,10 +291,9 @@ function SwipeFeed({ stories, idx, track, pct, done, goTo, nav, onRead, onRefres
 }
 
 /** 13 · You're caught up. Final card of the day's queue. */
-function CaughtUp({ segments, count, saved, onTop }: { segments: number; count: number; saved: number; onTop: () => void }) {
+function CaughtUp({ count, saved, onTop }: { count: number; saved: number; onTop: () => void }) {
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
-      <ProgressTrack track={Array(segments).fill(100)} />
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
         <EditorialMark />
         <h3 style={{ margin: '24px 0 0', font: '800 30px/1.1 var(--font)', letterSpacing: '-0.035em', color: 'var(--headline)' }}>you're caught up.</h3>
@@ -379,13 +398,20 @@ function ListSkeleton() {
 export function ReaderSheet({ story, onClose }: { story: Story; onClose: () => void }) {
   const [full, setFull] = useState<Story | null>(story.more ? story : null);
   const [gone, setGone] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let alive = true;
+    setFailed(false);
     api.story(story.id)
       .then(r => alive && setFull(r.story))
-      .catch(e => { if (!alive) return; if (e instanceof ApiError && (e.status === 410 || e.status === 404)) setGone(true); else setFull({ ...story, more: [] }); });
+      .catch(e => {
+        if (!alive) return;
+        if (e instanceof ApiError && (e.status === 410 || e.status === 404)) setGone(true);
+        else { setFailed(true); setFull(f => f ?? { ...story, more: [] }); }
+      });
     return () => { alive = false; };
-  }, [story]);
+  }, [story, attempt]);
   const s = full ?? story;
   return (
     <Sheet onClose={onClose} label={s.title}>
@@ -416,6 +442,13 @@ export function ReaderSheet({ story, onClose }: { story: Story; onClose: () => v
                 <div style={{ height: 16 }} />
                 <Shimmer w={110} h={11} r={5.5} style={{ marginBottom: 14 }} />
                 {['100%', '92%', '60%'].map((w, i) => <Shimmer key={i} w={w} h={14} r={7} style={{ marginBottom: 12 }} />)}
+              </div>
+            )}
+            {failed && !full?.more?.length && (
+              <div role="alert" style={{ alignSelf: 'stretch', marginTop: 24, padding: '14px 16px', borderRadius: 10, border: '1px solid var(--rule-2)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Icon name="cloud-off" size={18} color="var(--gray)" />
+                <span style={{ flex: 1, font: '400 13px/1.45 var(--font)', color: 'var(--gray)' }}>couldn't load the rest of this story.</span>
+                <button className="link-btn" onClick={() => { setFull(null); setAttempt(a => a + 1); }} style={{ font: '700 13px/1 var(--font)', color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}>try again</button>
               </div>
             )}
             <a href={s.url} target="_blank" rel="noopener noreferrer" className="ctl read-pill" style={{ marginTop: 32, borderColor: 'var(--line)', textDecoration: 'none', color: 'var(--ink)' }}>

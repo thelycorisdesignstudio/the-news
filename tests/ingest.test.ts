@@ -145,6 +145,17 @@ describe('ingestion cycle', () => {
     expect(events.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('counts newsrooms, not copies: one paper on three desks is not breaking news', async () => {
+    const { corroborate } = await import('../server/ingest/pipeline');
+    const { upsertStories } = await import('../server/stories');
+    upsertStories(db, [{ id: 'ipo', cat: 'Markets', topic: 'Markets', title: 'Shares list today', summary: 's', source: 'The Economic Times', url: 'https://x/ipo', publishedAt: new Date(now - 3600_000).toISOString(), level: 'national', type: 'news' }]);
+    for (let i = 0; i < 3; i++) corroborate(db, 'ipo', now, 'Economic Times');
+    expect(getStory(db, 'ipo')!.type).toBe('news');
+    corroborate(db, 'ipo', now, 'Reuters');
+    corroborate(db, 'ipo', now, 'Mint');
+    expect(getStory(db, 'ipo')!.type).toBe('breaking');
+  });
+
   it('never writes the same article twice, and honours 304s', async () => {
     let writes = 0;
     const write = async (c: Candidate) => { writes++; return extractive(c); };
@@ -437,5 +448,63 @@ describe('pull channel and thin feeds', () => {
     const space = r.body.stories.filter((s: { topic: string }) => s.topic === 'Space').length;
     expect(r.body.stories.length).toBeGreaterThan(space);
     expect(r.body.stories[0].topic).toBe('Space'); // the reader's own topics come first
+  });
+
+  it('a live merge adds only stories published since the reader last fetched', async () => {
+    const { createApp } = await import('../server/app');
+    const { seedDemoStories } = await import('../server/stories');
+    const request = (await import('supertest')).default;
+    const db = openDb(':memory:');
+    seedDemoStories(db);
+    const app = createApp({ db, mail: async () => {} });
+    const none = { cov: [], cty: [], plc: [], top: [], typ: [] };
+    const first = await request(app).post('/api/feed').send({ filters: none }).expect(200);
+    const keep = first.body.stories.slice(0, 3).map((s: { id: string }) => s.id);
+    expect(typeof first.body.serverTime).toBe('number');
+    // Nothing published since: the kept queue comes back, with nothing added (not the rest of the day).
+    const quiet = await request(app).post('/api/feed').send({ filters: none, keep, since: first.body.serverTime }).expect(200);
+    expect(quiet.body.stories.map((s: { id: string }) => s.id)).toEqual(keep);
+    // One story published: exactly that one is added.
+    const id = first.body.stories[5].id;
+    db.prepare('UPDATE stories SET ingested_at = ? WHERE id = ?').run(first.body.serverTime + 1, id);
+    const live = await request(app).post('/api/feed').send({ filters: none, keep, since: first.body.serverTime }).expect(200);
+    expect(live.body.stories.map((s: { id: string }) => s.id).filter((x: string) => !keep.includes(x))).toEqual([id]);
+  });
+});
+
+describe('extractive summaries', () => {
+  it('drops table fragments instead of printing them as sentences', async () => {
+    const { readableText } = await import('../server/ingest/summarize');
+    expect(readableText('The public issue opened for subscription on September 23 and closed on September 25, 2026. 91 times overall. 35 times subscription. 31 times.'))
+      .toBe('The public issue opened for subscription on September 23 and closed on September 25, 2026.');
+    expect(readableText('Photo: Reuters. Markets rallied on Wednesday as chipmakers gained after strong orders. Analysts expect more gains this week.'))
+      .toBe('Markets rallied on Wednesday as chipmakers gained after strong orders. Analysts expect more gains this week.');
+  });
+});
+
+describe('extractive sentence splitting', () => {
+  it('keeps decimals and abbreviations inside their sentence', async () => {
+    const { readableText } = await import('../server/ingest/summarize');
+    expect(readableText('The Dow Jones Industrial Average rose 0.9% on Friday. U.S. officials said talks would resume next week in Geneva.'))
+      .toBe('The Dow Jones Industrial Average rose 0.9% on Friday. U.S. officials said talks would resume next week in Geneva.');
+  });
+});
+
+describe('takedowns', () => {
+  it('announces a removed story live, so open queues withdraw it at once', async () => {
+    const { createApp } = await import('../server/app');
+    const { config } = await import('../server/config');
+    const { seedDemoStories } = await import('../server/stories');
+    const request = (await import('supertest')).default;
+    config.adminToken = 'takedown-admin';
+    const db = openDb(':memory:');
+    seedDemoStories(db);
+    const app = createApp({ db, mail: async () => {} });
+    const events: { ids: string[]; removed?: boolean }[] = [];
+    const on = (e: { ids: string[]; removed?: boolean }) => events.push(e);
+    newsEvents.on('stories', on);
+    await request(app).delete('/api/admin/stories/gpt5').set('Authorization', 'Bearer takedown-admin').expect(200);
+    newsEvents.off('stories', on);
+    expect(events).toContainEqual(expect.objectContaining({ ids: ['gpt5'], removed: true }));
   });
 });

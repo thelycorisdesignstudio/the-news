@@ -212,13 +212,33 @@ function typeFor(c: Candidate, blob: string): StoryType {
   return 'news';
 }
 
+/**
+ * Sentences a person would write. Feed excerpts often carry table cells and captions ("91 times overall.
+ * 35 times subscription."): short or mostly-number fragments are dropped, and so is everything after the
+ * first one once a real sentence is in hand, since what follows a table is rarely the story.
+ */
+export function readableText(text: string): string {
+  // Split at a stop followed by a space: "0.9%" stays whole, and so do "U.S." and "Dr.".
+  const sentences = text.replace(/\s+/g, ' ').trim().split(/(?<=[.!?]["’”)]?)(?<!\b(?:[A-Z]|Mr|Mrs|Ms|Dr|St|No|vs|Inc|Co|Corp)\.)\s+/);
+  const out: string[] = [];
+  for (const raw of sentences) {
+    const sen = raw.trim();
+    const words = sen.split(' ').filter(Boolean);
+    const numeric = words.filter(w => /\d/.test(w)).length;
+    const fragment = words.length < 6 || numeric / words.length > 0.4 || !/[a-z]{3,}/.test(sen);
+    if (fragment) { if (out.length) break; continue; }
+    out.push(sen);
+  }
+  return out.join(' ');
+}
+
 export function extractive(c: Candidate): Draft | null {
   const blob = `${c.title}. ${c.excerpt}`;
   const local = c.source.level === 'city';
   // The headline says what the story is about; the excerpt only settles what the headline doesn't.
   const topic = classify(c.title, { local }) ?? classify(blob, { local, beat: c.source.beat });
   if (!topic) return null;
-  const source = (c.article || c.excerpt).replace(/\s+/g, ' ').trim();
+  const source = readableText(c.article || c.excerpt);
   // A teaser that just repeats the headline isn't a summary.
   if (wordCount(source) < 12) return null;
   const summary = fitWords(source, SUMMARY_MAX_WORDS);

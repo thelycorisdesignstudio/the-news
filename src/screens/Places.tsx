@@ -161,18 +161,24 @@ export function AddPlace() {
   const [q, setQ] = useState('');
   const [results, setResults] = useState<Found[] | null>(null);
   const [searching, setSearching] = useState(false);
+  const [searchFailed, setSearchFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     const n = q.trim();
-    if (!n) { setResults(null); setSearching(false); return; }
+    if (!n) { setResults(null); setSearching(false); setSearchFailed(false); return; }
     let alive = true;
     setSearching(true);
     const t = window.setTimeout(() => {
-      api.searchPlaces(n).then(r => alive && setResults(r.places)).catch(() => alive && setResults([])).finally(() => alive && setSearching(false));
+      api.searchPlaces(n)
+        .then(r => { if (alive) { setResults(r.places); setSearchFailed(false); } })
+        // A failed search isn't "no results": say so, and offer another go.
+        .catch(() => { if (alive) { setResults(null); setSearchFailed(true); } })
+        .finally(() => alive && setSearching(false));
     }, 200);
     return () => { alive = false; window.clearTimeout(t); };
-  }, [q]);
+  }, [q, attempt]);
 
   const pick = (f: Found, kind: Place['kind'] = asHome || !prefs.places.length ? 'home' : 'other') => {
     const existing = prefs.places.find(p => p.kind === kind && (kind === 'home' || kind === 'current'));
@@ -211,7 +217,13 @@ export function AddPlace() {
       <BackButton />
       <Title>{asHome ? 'where is home?' : 'add a place.'}</Title>
       <SearchBox value={q} onChange={setQ} placeholder="search neighbourhoods and cities" />
-      {n && results && !results.length && !searching ? <NoResults what="places" q={n} /> : (
+      {n && searchFailed && !searching ? (
+        <div role="alert" style={{ position: 'absolute', top: T(232), left: 20, right: 20, padding: '16px', borderRadius: 10, border: '1px solid var(--rule-2)', background: 'color-mix(in srgb, var(--card) 70%, transparent)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Icon name={navigator.onLine ? 'cloud-off' : 'wifi-off'} size={18} color="var(--gray)" />
+          <span style={{ flex: 1, font: '400 13px/1.45 var(--font)', color: 'var(--gray)' }}>{navigator.onLine ? "couldn't search places just now." : "you're offline. places need a connection."}</span>
+          <button className="link-btn" onClick={() => setAttempt(a => a + 1)} style={{ font: '700 13px/1 var(--font)', color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 3 }}>try again</button>
+        </div>
+      ) : n && results && !results.length && !searching ? <NoResults what="places" q={n} /> : (
         <div className="no-scrollbar" style={{ position: 'absolute', top: T(232), left: 0, right: 0, bottom: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {!n && (
             <button className="row-btn" onClick={locate} disabled={locating} style={{ height: 56, padding: '0 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '.5px solid var(--rule)', flex: 'none' }}>
