@@ -1,25 +1,63 @@
 name: Collect news
-# Gathers every source on GitHub's network every 15 minutes. The snapshot lands on the `live-news` branch;
-# with the NEWS_APP_ORIGIN and NEWS_ADMIN_TOKEN secrets set, each batch is also pushed into the app.
+# Near-real-time collection on GitHub's network.
+#
+# GitHub delays scheduled runs heavily (a 15-minute cron actually fired every 3–7 hours), so collection
+# doesn't rely on the schedule. A relay job collects every source every COLLECT_EVERY seconds for about
+# five and a half hours, publishing each snapshot to the `live-news` branch, then starts its own
+# successor. The schedule is only a watchdog: if no relay is running (first start, a failed run, a
+# cancelled one), it starts one.
+#
+# With the NEWS_APP_ORIGIN and NEWS_ADMIN_TOKEN secrets set, each cycle also pushes straight into the app.
 on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      relay:
+        description: Run the collection relay (otherwise just check that one is running)
+        type: boolean
+        default: true
   push:
     branches: [main]
     paths: ['scripts/collect.ts', 'server/ingest/**', '.github/workflows/collect-news.yml']
 
 permissions:
   contents: write
-
-concurrency:
-  group: collect-news
-  cancel-in-progress: false
+  actions: write
 
 jobs:
-  collect:
+  # Starts a relay unless one is already running or queued. Runs on the schedule and on pushes.
+  watchdog:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 3
+    steps:
+      - name: Start a relay if none is running
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESTART: ${{ github.event_name == 'push' }}
+        run: |
+          active=$(gh run list -R "$GITHUB_REPOSITORY" --workflow collect-news.yml --event workflow_dispatch --json status \
+            --jq '[.[] | select(.status == "in_progress" or .status == "queued" or .status == "waiting")] | length')
+          if [ "$active" -gt 0 ] && [ "$RESTART" != "true" ]; then echo "relay running ($active)"; exit 0; fi
+          # A push restarts the relay so new collector code goes live now, not at the next hand-off.
+          gh workflow run collect-news.yml -R "$GITHUB_REPOSITORY" --ref main -f relay=true
+          echo "relay started"
+
+  relay:
+    if: github.event_name == 'workflow_dispatch' && inputs.relay
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    # A newer relay replaces an older one (a hand-off, or a push with new code).
+    concurrency:
+      group: collect-news-relay
+      cancel-in-progress: true
+    env:
+      COLLECT_EVERY: 180      # seconds between cycles
+      RELAY_MINUTES: 335      # hand off before the 6-hour job limit
+      APP_ORIGIN: ${{ secrets.NEWS_APP_ORIGIN }}
+      ADMIN_TOKEN: ${{ secrets.NEWS_ADMIN_TOKEN }}
+      DEMO_AUTH: '0'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,20 +65,35 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Collect
-        run: node --import tsx scripts/collect.ts "$RUNNER_TEMP/latest.json"
+      - name: Collect and publish every few minutes
         env:
-          APP_ORIGIN: ${{ secrets.NEWS_APP_ORIGIN }}
-          ADMIN_TOKEN: ${{ secrets.NEWS_ADMIN_TOKEN }}
-          DEMO_AUTH: '0'
-      - name: Publish snapshot to the live-news branch
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "the-news-collector"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan live-news-snapshot
-          git rm -rf --cached . > /dev/null
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          mkdir -p live && cp "$RUNNER_TEMP/latest.json" live/latest.json
-          git add live/latest.json
-          git commit -q -m "Live news $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push -q -f origin HEAD:live-news
+          end=$((SECONDS + RELAY_MINUTES * 60))
+          cycle=0
+          while [ $SECONDS -lt $end ]; do
+            started=$SECONDS
+            cycle=$((cycle + 1))
+            if node --import tsx scripts/collect.ts "$RUNNER_TEMP/latest.json"; then
+              # Publish from a scratch repository so the checkout stays intact between cycles.
+              pub="$RUNNER_TEMP/pub"
+              rm -rf "$pub" && mkdir -p "$pub/live" && cp "$RUNNER_TEMP/latest.json" "$pub/live/latest.json"
+              git -C "$pub" init -q -b live-news
+              git -C "$pub" add live/latest.json
+              git -C "$pub" -c user.name="the-news-collector" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -q -m "Live news $(date -u +%Y-%m-%dT%H:%MZ)"
+              git -C "$pub" push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" live-news \
+                || echo "::warning::publish failed on cycle $cycle"
+            else
+              echo "::warning::collection failed on cycle $cycle"
+            fi
+            pause=$((COLLECT_EVERY - (SECONDS - started)))
+            if [ $pause -gt 0 ] && [ $((SECONDS + pause)) -lt $end ]; then sleep $pause; fi
+          done
+          echo "relay done after $cycle cycles; handing off"
+      # Not after a cancellation: that means a newer relay already took over.
+      - name: Hand off to the next relay
+        if: success() || failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run collect-news.yml -R "$GITHUB_REPOSITORY" --ref main -f relay=true

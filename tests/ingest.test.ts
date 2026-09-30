@@ -411,6 +411,21 @@ describe('pull channel and thin feeds', () => {
     expect(await pullSnapshot(db, 'https://x/latest.json', f)).toMatchObject({ skipped: true });
   });
 
+  it('asks for the snapshot conditionally, so an unchanged one costs a 304', async () => {
+    const { pullSnapshot } = await import('../server/ingest/pipeline');
+    const db = openDb(':memory:');
+    const sent: (string | null)[] = [];
+    const f = (async (_u: string, init?: RequestInit) => {
+      const tag = new Headers(init?.headers).get('if-none-match');
+      sent.push(tag);
+      if (tag === '"v2"') return new Response(null, { status: 304 });
+      return new Response(JSON.stringify({ collectedAt: 'etag-1', batches: [] }), { headers: { etag: '"v2"' } });
+    }) as unknown as typeof fetch;
+    await pullSnapshot(db, 'https://x/latest.json', f);
+    expect(await pullSnapshot(db, 'https://x/latest.json', f)).toMatchObject({ skipped: true });
+    expect(sent.at(-1)).toBe('"v2"');
+  });
+
   it('tops up a quiet topic selection with the day\'s biggest stories', async () => {
     const { createApp } = await import('../server/app');
     const { seedDemoStories } = await import('../server/stories');
